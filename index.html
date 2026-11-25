@@ -77,7 +77,15 @@ tr.row{cursor:pointer}tr.row:hover td{background:var(--soft)}
   <label>Şifre<input id="pw" type="password" autocomplete="current-password" required style="font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;width:100%;background:var(--bg);color:var(--ink)"></label>
   <button class="btn" type="submit" style="background:var(--ink);color:var(--bg)">Giriş yap</button>
   <button class="btn" type="button" id="signupBtn">İlk kez: hesap oluştur</button>
+  <button class="btn sm" type="button" id="forgotBtn" style="justify-self:start;border:0;background:none;padding:0;text-decoration:underline;color:var(--mut)">Şifremi unuttum</button>
   <span id="lmsg" class="small mut" role="status"></span>
+ </form>
+ <form id="resetForm" hidden style="width:min(380px,100%);display:grid;gap:12px">
+  <b style="font-size:28px;font-weight:800">Yeni şifre belirle</b><span class="mut">En az 8 karakterlik yeni şifrenizi iki kez yazın.</span>
+  <label>Yeni şifre<input id="npw" type="password" autocomplete="new-password" minlength="8" required style="font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;width:100%;background:var(--bg);color:var(--ink)"></label>
+  <label>Yeni şifre (tekrar)<input id="npw2" type="password" autocomplete="new-password" minlength="8" required style="font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;width:100%;background:var(--bg);color:var(--ink)"></label>
+  <button class="btn" type="submit" style="background:var(--ink);color:var(--bg)">Şifreyi kaydet</button>
+  <span id="rmsg" class="small mut" role="status"></span>
  </form>
 </section>
 <div id="app" hidden>
@@ -285,8 +293,25 @@ document.getElementById('signupBtn').addEventListener('click',async()=>{const m=
  const {error}=await sb.auth.signUp({email:em,password:pw,options:{emailRedirectTo:location.origin+location.pathname}});
  m.textContent=error?error.message:'Doğrulama e-postası gönderildi. Maildeki bağlantıya tıklayıp sonra giriş yapın.'});
 document.getElementById('logout').addEventListener('click',async()=>{await sb.auth.signOut();location.reload()});
+// şifre sıfırlama
+const loginForm=document.getElementById('loginForm'),resetForm=document.getElementById('resetForm');
+let recovering=/type=recovery/.test(location.hash);
+function showReset(){recovering=true;app.hidden=true;auth.hidden=false;loginForm.hidden=true;resetForm.hidden=false;document.getElementById('npw').focus()}
+document.getElementById('forgotBtn').addEventListener('click',async()=>{const m=document.getElementById('lmsg');const em=document.getElementById('em').value.trim();
+ if(!em){m.textContent='Önce e-posta adresinizi yazın, sonra "Şifremi unuttum"a basın.';document.getElementById('em').focus();return}
+ m.textContent='Gönderiliyor…';
+ const {error}=await sb.auth.resetPasswordForEmail(em,{redirectTo:location.origin+location.pathname});
+ m.textContent=error?error.message:'Şifre sıfırlama bağlantısı '+em+' adresine gönderildi. Maildeki bağlantıya tıklayın; açılan sayfada yeni şifrenizi belirleyin. Mail gelmezse gereksiz klasörüne bakın.'});
+resetForm.addEventListener('submit',async e=>{e.preventDefault();const m=document.getElementById('rmsg');const a=document.getElementById('npw').value,b=document.getElementById('npw2').value;
+ if(a.length<8){m.textContent='Şifre en az 8 karakter olmalı.';return}
+ if(a!==b){m.textContent='İki şifre aynı değil.';return}
+ m.textContent='Kaydediliyor…';
+ const {error}=await sb.auth.updateUser({password:a});
+ if(error){m.textContent=error.message;return}
+ recovering=false;history.replaceState(null,'',location.pathname);resetForm.hidden=true;loginForm.hidden=false;m.textContent='';boot()});
+sb.auth.onAuthStateChange(ev=>{if(ev==='PASSWORD_RECOVERY')showReset()});
 
-boot();
+if(recovering)showReset();else boot();
 }
 </script>
 </body>
