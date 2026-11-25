@@ -16,6 +16,7 @@
 :root{color-scheme:light dark;--bg:light-dark(#ffffff,#101418);--ink:light-dark(#101418,#eef1f4);--mut:light-dark(#5b6670,#9aa5b0);--line:light-dark(#e3e7eb,#26303a);--soft:light-dark(#f4f6f8,#18212a);--y:#ffd84a;--ok:light-dark(#1d7a4a,#5fd39a);--bad:light-dark(#b3261e,#ff8a80);--warn:light-dark(#8a5a00,#ffcc66);--info:light-dark(#2f5f8f,#8fbaf0)}
 :root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
 *{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Manrope,system-ui,sans-serif;overflow-x:clip}
 .band{padding:clamp(20px,3vw,40px) max(4vw,16px)}
 .wrap{max-width:1240px;margin:0 auto}
@@ -284,7 +285,7 @@ document.getElementById('signupBtn').addEventListener('click',async()=>{const m=
  const {error}=await sb.auth.signUp({email:em,password:pw,options:{emailRedirectTo:location.origin+location.pathname}});
  m.textContent=error?error.message:'Doğrulama e-postası gönderildi. Maildeki bağlantıya tıklayıp sonra giriş yapın.'});
 document.getElementById('logout').addEventListener('click',async()=>{await sb.auth.signOut();location.reload()});
-sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_IN'&&app.hidden)boot()});
+
 boot();
 }
 </script>
