@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <title>BURAK ERP</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -418,6 +420,12 @@ resetForm.addEventListener('submit',async e=>{e.preventDefault();const m=documen
  recovering=false;history.replaceState(null,'',location.pathname);resetForm.hidden=true;loginForm.hidden=false;m.textContent='';boot()});
 sb.auth.onAuthStateChange(ev=>{if(ev==='PASSWORD_RECOVERY')showReset()});
 
+// Yeni sürüm kontrolü: GitHub Pages sayfayı ~10 dk önbellekte tutar; sürüm değiştiyse oturumu koruyarak yeni sürümü yükler
+const BUILD='202611251539';
+async function checkVersion(){try{const t=await (await fetch(location.pathname+'?nocache='+Date.now(),{cache:'no-store'})).text();const m=t.match(/const BUILD='(\d+)'/);if(!m||m[1]===BUILD)return;
+ const k='reloaded-'+m[1];if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');location.replace(location.pathname+'?v='+m[1]+location.hash)}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkVersion()});
+checkVersion();
 if(recovering)showReset();else boot();
 }
 </script>
