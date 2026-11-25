@@ -61,6 +61,23 @@ tr.row{cursor:pointer}tr.row:hover td{background:var(--soft)}
 .detail td{background:var(--soft)}
 .detail .in{padding:6px 4px 10px}
 .mut{color:var(--mut)}.small{font-size:13px}
+.shell{display:grid;grid-template-columns:220px minmax(0,1fr);align-items:start}
+aside.side{position:sticky;top:0;border-right:1px solid var(--line);padding:18px 12px;min-height:calc(100vh - 80px);display:flex;flex-direction:column;gap:2px}
+aside.side a{display:flex;align-items:center;gap:8px;min-height:42px;padding:8px 12px;border-radius:8px;color:var(--ink);text-decoration:none;font-weight:600;font-size:15px}
+aside.side a:hover{background:var(--soft)}
+aside.side a[aria-current]{background:var(--ink);color:var(--bg)}
+aside.side .grp{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);padding:14px 12px 4px}
+aside.side a.sub{padding-left:26px;font-weight:500}
+aside.side .cnt{margin-left:auto;font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--y);color:#101418}
+@media(max-width:860px){.shell{grid-template-columns:minmax(0,1fr)}aside.side{position:static;min-height:0;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:8px 12px}aside.side .grp{display:none}aside.side a{flex:none}aside.side a.sub{padding-left:12px}}
+.form{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:12px 0 20px;padding:14px;border:1px solid var(--line);border-radius:12px}
+.form label{display:grid;gap:4px;font-size:13px;color:var(--mut);font-weight:600}
+.form input,.form textarea{font:inherit;font-size:16px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.form textarea{min-width:min(100%,420px);min-height:44px}
+.rem{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:start;padding:12px 4px;border-bottom:1px solid var(--line)}
+.rem p{margin:0;white-space:pre-wrap}.rem.done p{text-decoration:line-through;color:var(--mut)}
+.rem input[type=checkbox],td input[type=checkbox]{width:22px;height:22px;margin-top:2px;cursor:pointer}
+.late{color:var(--bad);font-weight:700}
 .note{border-left:4px solid var(--y);padding:10px 14px;background:var(--soft);border-radius:0 8px 8px 0;margin:12px 0;font-size:14px}
 .scroll{overflow-x:auto}
 .empty{padding:28px;text-align:center;color:var(--mut)}
@@ -97,7 +114,16 @@ tr.row{cursor:pointer}tr.row:hover td{background:var(--soft)}
   </nav>
  </div>
 </header>
+<div class="shell">
+<aside class="side" aria-label="Ana menü">
+ <a href="#ozet" data-side="memorial">Memorial siparişleri</a>
+ <a href="#hatirlatici" data-side="hatirlatici">Hatırlatıcı <span class="cnt" id="remCnt" hidden></span></a>
+ <div class="grp">Cari</div>
+ <a href="#alacaklar" class="sub" data-side="alacaklar">Alacaklarım</a>
+ <a href="#verecekler" class="sub" data-side="verecekler">Vereceklerim</a>
+</aside>
 <main class="band"><div class="wrap" id="view"><div class="empty">Veriler yükleniyor…</div></div></main>
+</div>
 <footer class="band mut small" style="border-top:1px solid var(--line)"><span id="who"></span> · <button class="btn sm" id="logout">Çıkış</button><br><div class="wrap">Kaynak: cem.sakizci@memorial.com.tr SAS formları (PDF) ve EDM gelen/giden e-fatura XML'leri. Durum, siparişteki SAS no + ürün kodunun aktif (iade edilmemiş) faturalardaki miktarla karşılaştırılmasıyla hesaplanır. <span id="sync" class="sync"></span></div></footer>
 </div>
 <script>
@@ -126,8 +152,8 @@ function build(raw){
 const supN=k=>D&&D.ted[k]||'Tanımsız';const sup=k=>{const n=supN(k);return ` <span class="pill ${n==='GLF Gıda'?'p-glf':n==='İstanbul Kahve'?'p-ist':'p-ia'}">${esc(n==='GLF Gıda'?'GLF':n)}</span>`};
 const eff=o=>{const m=manual[o.sas];if(m&&m.teslim)return 'teslim';return o.durum};
 const effPill=o=>{const m=manual[o.sas];if(m&&m.teslim&&o.durum!=='teslim')return '<span class="pill p-ok">Teslim (elle)</span>';return o.durum==='teslim'?'<span class="pill p-ok">Teslim edildi</span>':o.durum==='acik'?(o.iade?'<span class="pill p-ks">İade · yeniden kesilecek</span>':'<span class="pill p-ac">Açık</span>'):'<span class="pill p-ks">Kısmi teslim</span>'};
-let lastTab='';function setTab(){const hh=(location.hash||'#ozet').slice(1);if(hh!==lastTab&&lastTab){if(!(hh==='siparisler'&&ui.open))ui.search=''}lastTab=hh;const h=(location.hash||'#ozet').slice(1);for(const a of document.querySelectorAll('nav.tabs a'))a.toggleAttribute('aria-current',a.getAttribute('href')==='#'+h);render(h)}
-function render(h){const v=document.getElementById('view');if(!D)return;
+let lastTab='';function setTab(){const hh=(location.hash||'#ozet').slice(1);if(hh!==lastTab&&lastTab){if(!(hh==='siparisler'&&ui.open))ui.search=''}lastTab=hh;const h=(location.hash||'#ozet').slice(1);for(const a of document.querySelectorAll('nav.tabs a'))a.toggleAttribute('aria-current',a.getAttribute('href')==='#'+h);const side=NEWV.includes(h)?h:'memorial';for(const a of document.querySelectorAll('aside.side a'))a.toggleAttribute('aria-current',a.dataset.side===side);document.querySelector('nav.tabs').hidden=NEWV.includes(h);render(h)}
+function render(h){const v=document.getElementById('view');if(NEWV.includes(h)){renderNew(h);return}if(!D)return;
  if(h==='teslim')v.innerHTML=vList('teslim');else if(h==='kismi')v.innerHTML=vKismi();else if(h==='acik-siparis')v.innerHTML=vList('acik');else if(h==='acik')v.innerHTML=vOpen();else if(h==='siparisler')v.innerHTML=vOrders();else if(h==='faturalar')v.innerHTML=vInvoices();else if(h==='kontrol')v.innerHTML=vCheck();else v.innerHTML=vSummary();
  bindView(h)}
 function vSummary(){
@@ -250,6 +276,64 @@ function bindView(h){const v=document.getElementById('view');
  v.querySelectorAll('[data-go]').forEach(a=>a.onclick=()=>{ui.filter='hepsi';ui.search='';ui.open=a.dataset.go});
  v.querySelectorAll('textarea').forEach(t=>t.onclick=e=>e.stopPropagation())}
 function sync(t){const s=document.getElementById('sync');if(s)s.textContent=t}
+// ---------- Hatırlatıcı ve Cari ----------
+const NEWV=['hatirlatici','alacaklar','verecekler'];
+const today=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)};
+const daysSince=s=>s?Math.floor((Date.parse(today())-Date.parse(String(s).slice(0,10)))/864e5):null;
+const cui={cfilter:'acik',party:''};
+let newSeq=0;
+async function renderNew(h){const v=document.getElementById('view');const my=++newSeq;
+ if(!v.dataset.nv||v.dataset.nv!==h){v.innerHTML='<div class="empty">Yükleniyor…</div>';v.dataset.nv=h}
+ try{const html=h==='hatirlatici'?await vReminders():await vCari(h==='alacaklar'?'alacak':'verecek');if(my!==newSeq)return;v.innerHTML=html;bindNew(h)}
+ catch(e){if(my===newSeq)v.innerHTML='<div class="empty">Okunamadı: '+esc(e.message||e)+'</div>'}}
+async function remCount(){try{const {count}=await sb.from('reminders').select('id',{count:'exact',head:true}).eq('done',false).lte('due_date',today());const c=document.getElementById('remCnt');if(c){c.hidden=!count;c.textContent=count||''}}catch(e){}}
+async function vReminders(){
+ const rs=await all(sb.from('reminders').select('*').order('done').order('due_date',{ascending:true,nullsFirst:false}).order('created_at',{ascending:false}).limit(1000));
+ const open=rs.filter(r=>!r.done),done=rs.filter(r=>r.done);remCount();
+ const row=r=>{const late=!r.done&&r.due_date&&r.due_date<today();const td=!r.done&&r.due_date===today();
+  return `<div class="rem${r.done?' done':''}"><input type="checkbox" data-rdone="${r.id}" ${r.done?'checked':''} aria-label="Tamamlandı"><div><p>${esc(r.body)}</p><span class="small ${late?'late':'mut'}">${r.due_date?(late?'Gecikti · ':td?'Bugün · ':'')+d2(r.due_date):'Tarihsiz'} · eklendi ${fmtT(r.created_at)}</span></div><button class="btn sm" data-rdel="${r.id}">Sil</button></div>`};
+ return `<h1>Hatırlatıcı</h1><p class="lede">Notlarınız ve yapılacaklar. Tarih verirseniz o gün ve sonrasında menüde sayı olarak görünür.</p>
+ <form class="form" id="remForm"><label style="flex:1 1 320px">Not<textarea id="remBody" required placeholder="Örn. Memorial'e ALP…045'i 3901013265 SAS no ile yeniden kes"></textarea></label><label>Tarih (isteğe bağlı)<input type="date" id="remDate"></label><button class="btn" type="submit" style="background:var(--ink);color:var(--bg)">Ekle</button><span id="remMsg" class="small mut" role="status"></span></form>
+ <h2>Bekleyen (${open.length})</h2>${open.length?open.map(row).join(''):'<div class="empty">Bekleyen not yok.</div>'}
+ ${done.length?`<details style="margin-top:20px"><summary style="cursor:pointer;font-weight:700">Tamamlananlar (${done.length})</summary>${done.map(row).join('')}</details>`:''}`}
+async function vCari(kind){
+ const dir=kind==='alacak'?'out':'in';
+ const [inv,ret,st,man]=await Promise.all([
+  all(sb.from('invoices').select('invoice_no,issue_date,party_name,net_amount,payable_amount').eq('direction',dir).eq('invoice_type','SATIS').limit(5000)),
+  all(sb.from('invoices').select('returns_invoice_no').not('returns_invoice_no','is',null).limit(5000)),
+  all(sb.from('invoice_payment_status').select('*').limit(5000)),
+  all(sb.from('cari_manual').select('*').eq('kind',kind).limit(5000))]);
+ const rset=new Set(ret.map(r=>r.returns_invoice_no));const sm={};for(const x of st)sm[x.invoice_no]=x;
+ const rows=inv.filter(i=>!rset.has(i.invoice_no)).map(i=>({key:'f:'+i.invoice_no,no:i.invoice_no,tarih:i.issue_date,taraf:i.party_name||'?',tutar:+i.payable_amount,odendi:!!(sm[i.invoice_no]&&sm[i.invoice_no].paid),odemeT:sm[i.invoice_no]&&sm[i.invoice_no].paid_date,elle:false}))
+  .concat(man.map(m=>({key:'m:'+m.id,id:m.id,no:m.description||'(elle)',tarih:m.due_date||String(m.created_at).slice(0,10),taraf:m.party,tutar:+m.amount,odendi:m.paid,elle:true,vade:m.due_date})));
+ const iadeN=inv.filter(i=>rset.has(i.invoice_no)).length;
+ const parties=[...new Set(rows.map(r=>r.taraf))].sort((a,b)=>a.localeCompare(b,'tr'));
+ const acik=rows.filter(r=>!r.odendi),acikT=acik.reduce((a,r)=>a+r.tutar,0),odT=rows.filter(r=>r.odendi).reduce((a,r)=>a+r.tutar,0);
+ const byP={};for(const r of acik){(byP[r.taraf]=byP[r.taraf]||{t:0,n:0,eski:r.tarih});byP[r.taraf].t+=r.tutar;byP[r.taraf].n++;if(r.tarih<byP[r.taraf].eski)byP[r.taraf].eski=r.tarih}
+ let list=rows.filter(r=>cui.cfilter==='hepsi'||(cui.cfilter==='acik'?!r.odendi:r.odendi)).filter(r=>!cui.party||r.taraf===cui.party).sort((a,b)=>String(a.tarih).localeCompare(String(b.tarih)));
+ const T=kind==='alacak'?{h:'Alacaklarım',l:'Kestiğiniz satış faturaları (iade edilenler hariç) ve elle girdiğiniz alacaklar. Tahsil edileni “Ödendi” olarak işaretleyin.',taraf:'Müşteri',od:'Tahsil edildi'}:{h:'Vereceklerim',l:'Tedarikçilerin size kestiği faturalar ve elle girdiğiniz borçlar. Ödediğinizi “Ödendi” olarak işaretleyin.',taraf:'Tedarikçi',od:'Ödendi'};
+ return `<h1>${T.h}</h1><p class="lede">${T.l} Tutarlar KDV dahil.</p>
+ <div class="kpis"><div class="kpi hot"><div class="v">${tl(acikT)}</div><div class="l">Açık (${acik.length} kayıt)</div></div><div class="kpi"><div class="v">${tl(odT)}</div><div class="l">${T.od}</div></div><div class="kpi"><div class="v">${Object.keys(byP).length}</div><div class="l">${T.taraf} (açık bakiyeli)</div></div></div>
+ ${Object.keys(byP).length?`<h2>${T.taraf} bazında açık bakiye</h2><div class="scroll"><table class="stack"><thead><tr><th>${T.taraf}</th><th class="n">Kayıt</th><th class="n">Açık tutar</th><th class="n">En eski</th></tr></thead><tbody>${Object.entries(byP).sort((a,b)=>b[1].t-a[1].t).map(([k,x])=>`<tr><td>${esc(k)}</td><td class="n">${x.n}</td><td class="n">${tl(x.t)}</td><td class="n">${d2(x.eski)} · ${daysSince(x.eski)} gün</td></tr>`).join('')}</tbody></table></div>`:''}
+ <h2>Kayıtlar</h2>
+ <div class="chips">${[['acik','Açık'],['odendi',T.od],['hepsi','Hepsi']].map(([k,l])=>`<button data-cf="${k}" aria-pressed="${cui.cfilter===k}">${l}</button>`).join('')}
+ <select id="cParty" style="font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);min-height:44px"><option value="">Tüm ${T.taraf.toLowerCase()}ler</option>${parties.map(p=>`<option ${cui.party===p?'selected':''}>${esc(p)}</option>`).join('')}</select></div>
+ <div class="scroll"><table class="stack"><thead><tr><th>Tarih</th><th>${T.taraf}</th><th>Fatura / açıklama</th><th class="n">Tutar</th><th class="n">Gün</th><th>${T.od}</th><th></th></tr></thead><tbody>
+ ${list.length?list.map(r=>`<tr><td>${d2(r.tarih)}</td><td>${esc(r.taraf)}${r.elle?' <span class="pill p-ia">elle</span>':''}</td><td>${esc(r.no)}</td><td class="n">${tl(r.tutar)}</td><td class="n">${r.odendi?'':daysSince(r.tarih)}</td><td><input type="checkbox" data-paid="${esc(r.key)}" ${r.odendi?'checked':''} aria-label="${T.od}"></td><td>${r.elle?`<button class="btn sm" data-mdel="${r.id}">Sil</button>`:''}</td></tr>`).join(''):`<tr><td colspan="7" class="empty">Kayıt yok.</td></tr>`}
+ </tbody></table></div>
+ ${iadeN?`<p class="small mut">Karşı tarafın iade ettiği ${iadeN} fatura listede yok.</p>`:''}
+ <h2>Elle ${kind==='alacak'?'alacak':'borç'} ekle</h2>
+ <form class="form" id="cForm"><label>${T.taraf}<input id="cParty2" required list="cPl"><datalist id="cPl">${parties.map(p=>`<option value="${esc(p)}">`).join('')}</datalist></label><label style="flex:1 1 220px">Açıklama<input id="cDesc" placeholder="Örn. avans, çek, faturasız iş"></label><label>Tutar (₺)<input id="cAmt" type="number" step="0.01" min="0" required style="width:9em"></label><label>Vade<input id="cDue" type="date"></label><button class="btn" type="submit" style="background:var(--ink);color:var(--bg)">Ekle</button><span id="cMsg" class="small mut" role="status"></span></form>`}
+function bindNew(h){const v=document.getElementById('view');const re=()=>renderNew(h);const err=(id,e)=>{const m=document.getElementById(id);if(m)m.textContent='Kaydedilemedi: '+e.message};
+ const f=v.querySelector('#remForm');if(f)f.onsubmit=async e=>{e.preventDefault();const b=v.querySelector('#remBody').value.trim();if(!b)return;const {error}=await sb.from('reminders').insert({body:b,due_date:v.querySelector('#remDate').value||null});if(error)return err('remMsg',error);re()};
+ v.querySelectorAll('[data-rdone]').forEach(c=>c.onchange=async()=>{const {error}=await sb.from('reminders').update({done:c.checked,updated_at:new Date().toISOString()}).eq('id',c.dataset.rdone);if(error)alertless(error);re()});
+ v.querySelectorAll('[data-rdel]').forEach(b=>b.onclick=async()=>{if(b.dataset.sure!=='1'){b.dataset.sure='1';b.textContent='Emin misiniz?';return}const {error}=await sb.from('reminders').delete().eq('id',b.dataset.rdel);if(error)alertless(error);re()});
+ v.querySelectorAll('[data-cf]').forEach(b=>b.onclick=()=>{cui.cfilter=b.dataset.cf;re()});
+ const ps=v.querySelector('#cParty');if(ps)ps.onchange=()=>{cui.party=ps.value;re()};
+ v.querySelectorAll('[data-paid]').forEach(c=>c.onchange=async()=>{const [t,k]=[c.dataset.paid.slice(0,1),c.dataset.paid.slice(2)];const q=t==='f'?sb.from('invoice_payment_status').upsert({invoice_no:k,paid:c.checked,paid_date:c.checked?today():null,updated_at:new Date().toISOString()}):sb.from('cari_manual').update({paid:c.checked}).eq('id',k);const {error}=await q;if(error)alertless(error);re()});
+ v.querySelectorAll('[data-mdel]').forEach(b=>b.onclick=async()=>{if(b.dataset.sure!=='1'){b.dataset.sure='1';b.textContent='Emin misiniz?';return}const {error}=await sb.from('cari_manual').delete().eq('id',b.dataset.mdel);if(error)alertless(error);re()});
+ const cf=v.querySelector('#cForm');if(cf)cf.onsubmit=async e=>{e.preventDefault();const {error}=await sb.from('cari_manual').insert({kind:h==='alacaklar'?'alacak':'verecek',party:v.querySelector('#cParty2').value.trim(),description:v.querySelector('#cDesc').value.trim()||null,amount:+v.querySelector('#cAmt').value,due_date:v.querySelector('#cDue').value||null});if(error)return err('cMsg',error);re()}}
+function alertless(e){sync('Kaydedilemedi: '+(e.message||e))}
 window.addEventListener('hashchange',setTab);
 const SB_URL='https://dkltytnndqweulawhgpa.supabase.co',SB_KEY='sb_publishable_RjA7K6BqfH3ZKLTnmE8upw_mLu2DZqd';
 const sb=window.supabase.createClient(SB_URL,SB_KEY);
@@ -283,7 +367,7 @@ async function save(sas,patch){const cur=manual[sas]||{};const nx={...cur,...pat
 // auth
 const auth=document.getElementById('auth'),app=document.getElementById('app');
 async function boot(){const {data:{session}}=await sb.auth.getSession();if(session){auth.hidden=true;app.hidden=false;document.getElementById('who').textContent=session.user.email;
-  try{await loadAll()}catch(e){document.getElementById('view').innerHTML='<div class="empty">Veri okunamadı: '+esc(e.message||e)+'<br>Bu e-posta adresinin erişim izni yoksa yöneticinize bildirin.</div>'}}
+  remCount();try{await loadAll()}catch(e){document.getElementById('view').innerHTML='<div class="empty">Veri okunamadı: '+esc(e.message||e)+'<br>Bu e-posta adresinin erişim izni yoksa yöneticinize bildirin.</div>'}}
  else{auth.hidden=false;app.hidden=true}}
 document.getElementById('loginForm').addEventListener('submit',async e=>{e.preventDefault();const m=document.getElementById('lmsg');m.textContent='Giriş yapılıyor…';
  const {error}=await sb.auth.signInWithPassword({email:document.getElementById('em').value.trim(),password:document.getElementById('pw').value});
