@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<title>BURAK ERP</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: işçi bir denetim raporu — net, sakin, rakam önde
+   IDEA: SAP sipariş formu ile e-fatura arasında mutabakat defteri
+   PICTURE: teslim yeri bazında açık tutar çubukları + durum şeridi
+   COLOUR and TYPE: beyaz zemin, mürekkep #101418, tek sarı blok #ffd84a anahtar rakamda; Manrope
+   LAYOUT: rakam ve grafik üstte, sekmeli tablolar altta */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#101418);--ink:light-dark(#101418,#eef1f4);--mut:light-dark(#5b6670,#9aa5b0);--line:light-dark(#e3e7eb,#26303a);--soft:light-dark(#f4f6f8,#18212a);--y:#ffd84a;--ok:light-dark(#1d7a4a,#5fd39a);--bad:light-dark(#b3261e,#ff8a80);--warn:light-dark(#8a5a00,#ffcc66);--info:light-dark(#2f5f8f,#8fbaf0)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Manrope,system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(20px,3vw,40px) max(4vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+header.top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 20px;border-bottom:1px solid var(--line)}
+header.top b{font-size:22px;font-weight:800;letter-spacing:-.01em}
+header.top span{color:var(--mut);font-size:14px}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;margin-left:auto}
+nav.tabs a{flex:none;padding:10px 14px;border-radius:8px;color:var(--ink);text-decoration:none;font-weight:600;font-size:15px;min-height:44px;display:flex;align-items:center}
+nav.tabs a[aria-current]{background:var(--ink);color:var(--bg)}
+h1{font-size:clamp(28px,4vw,44px);line-height:1.08;margin:0 0 6px;text-wrap:balance;font-weight:800;letter-spacing:-.02em}
+h2{font-size:22px;margin:28px 0 10px}
+.lede{color:var(--mut);max-width:70ch;margin:0 0 18px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:18px 0}
+.kpi{padding:16px 18px;border:1px solid var(--line);border-radius:12px}
+.kpi.hot{background:var(--y);color:#101418;border-color:var(--y)}
+.kpi .v{font-size:clamp(24px,3vw,32px);font-weight:800;white-space:nowrap}
+.kpi .l{font-size:14px;color:inherit;opacity:.8}
+.grid2{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px}
+@media(max-width:860px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.bars .r{display:grid;grid-template-columns:minmax(0,11em) minmax(0,1fr) 7.5em;gap:10px;align-items:center;padding:6px 0;font-size:14px}
+.bars .t{height:22px;background:var(--soft);border-radius:4px;overflow:hidden;display:flex}
+.bars .t i{display:block;height:100%}
+.bars .n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--mut);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.c-ac{background:var(--bad)}.c-ok{background:var(--ok)}.c-ks{background:var(--warn)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 12px}
+.chips button,.btn{font:inherit;font-size:14px;font-weight:600;padding:8px 14px;min-height:44px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.chips button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.sm{min-height:36px;padding:5px 12px;font-size:13px;border-radius:8px}
+input[type=search],input[type=email],textarea{font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);width:100%;max-width:420px}
+textarea{max-width:none;min-height:60px}
+:focus-visible{outline:3px solid var(--info);outline-offset:2px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:13px;color:var(--mut);font-weight:600;border-bottom:1px solid var(--line);padding:8px 8px}
+td{border-bottom:1px solid var(--line);padding:9px 8px;vertical-align:top}
+td.n,th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+tr.row{cursor:pointer}tr.row:hover td{background:var(--soft)}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;border:1px solid currentColor}
+.p-ac{color:var(--bad)}.p-ok{color:var(--ok)}.p-ks{color:var(--warn)}.p-fz{color:var(--info)}.p-ia{color:var(--mut)}.p-glf{color:#fff;background:#6b3e1f;border-color:#6b3e1f}.p-ist{color:#fff;background:#b3261e;border-color:#b3261e}
+.li{min-height:24px;line-height:24px;white-space:nowrap}.li .pill{vertical-align:1px}
+.detail td{background:var(--soft)}
+.detail .in{padding:6px 4px 10px}
+.mut{color:var(--mut)}.small{font-size:13px}
+.shell{display:grid;grid-template-columns:220px minmax(0,1fr);align-items:start}
+aside.side{position:sticky;top:0;border-right:1px solid var(--line);padding:18px 12px;min-height:calc(100vh - 80px);display:flex;flex-direction:column;gap:2px}
+aside.side a{display:flex;align-items:center;gap:8px;min-height:42px;padding:8px 12px;border-radius:8px;color:var(--ink);text-decoration:none;font-weight:600;font-size:15px}
+aside.side a:hover{background:var(--soft)}
+aside.side a[aria-current]{background:var(--ink);color:var(--bg)}
+aside.side .grp{font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ink);padding:14px 12px 4px}
+aside.side a.sub{padding-left:26px;font-weight:500;min-height:38px;font-size:14.5px}
+aside.side a.top,aside.side button.top{font:inherit;font-size:13px;font-weight:800;letter-spacing:.06em;margin-top:6px;width:100%;display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 12px;border:0;border-radius:8px;background:none;color:var(--ink);cursor:pointer;text-align:left;text-decoration:none}
+aside.side button.top:hover{background:var(--soft)}
+aside.side .car{margin-left:auto;transition:transform .15s}
+aside.side .sg.open .car{transform:rotate(90deg)}
+aside.side .subs{display:none;flex-direction:column;gap:2px}
+aside.side .sg.open .subs{display:flex}
+aside.side .sg.cur>button.top{color:var(--ink);background:var(--soft)}
+aside.side>:first-child .top,aside.side>.top:first-child{margin-top:0}
+
+aside.side .cnt{margin-left:auto;font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--y);color:#101418}
+@media(max-width:860px){.shell{grid-template-columns:minmax(0,1fr)}aside.side{position:static;min-height:0;border-right:0;border-bottom:1px solid var(--line);padding:8px 12px}aside.side .subs{flex-direction:row;flex-wrap:wrap}aside.side a.sub{padding-left:12px}}
+.form{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:12px 0 20px;padding:14px;border:1px solid var(--line);border-radius:12px}
+.form label{display:grid;gap:4px;font-size:13px;color:var(--mut);font-weight:600}
+.form input,.form textarea{font:inherit;font-size:16px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.form textarea{min-width:min(100%,420px);min-height:44px}
+.rem{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:start;padding:12px 4px;border-bottom:1px solid var(--line)}
+.rem p{margin:0;white-space:pre-wrap}.rem.done p{text-decoration:line-through;color:var(--mut)}
+.rem input[type=checkbox],td input[type=checkbox]{width:22px;height:22px;margin-top:2px;cursor:pointer}
+.late{color:var(--bad);font-weight:700}
+.note{border-left:4px solid var(--y);padding:10px 14px;background:var(--soft);border-radius:0 8px 8px 0;margin:12px 0;font-size:14px}
+.scroll{overflow-x:auto}
+.empty{padding:28px;text-align:center;color:var(--mut)}
+.sync{font-size:13px;color:var(--mut)}
+@media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mut)}.stack td:empty{display:none}.bars .r{grid-template-columns:minmax(0,1fr) 6.5em}.bars .t{grid-column:1/-1;order:3}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<section id="auth" hidden class="band" style="min-height:100vh;display:grid;place-items:center">
+ <form id="loginForm" style="width:min(380px,100%);display:grid;gap:12px">
+  <b style="font-size:28px;font-weight:800">BURAK ERP</b><span class="mut">Alpin Endüstriyel Mutfak · sipariş ve fatura takibi</span>
+  <label>E-posta<input id="em" type="email" autocomplete="username" required style="max-width:none"></label>
+  <label>Şifre<input id="pw" type="password" autocomplete="current-password" required style="font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;width:100%;background:var(--bg);color:var(--ink)"></label>
+  <button class="btn" type="submit" style="background:var(--ink);color:var(--bg)">Giriş yap</button>
+  <button class="btn" type="button" id="signupBtn">İlk kez: hesap oluştur</button>
+  <button class="btn sm" type="button" id="forgotBtn" style="justify-self:start;border:0;background:none;padding:0;text-decoration:underline;color:var(--mut)">Şifremi unuttum</button>
+  <span id="lmsg" class="small mut" role="status"></span>
+ </form>
+ <form id="resetForm" hidden style="width:min(380px,100%);display:grid;gap:12px">
+  <b style="font-size:28px;font-weight:800">Yeni şifre belirle</b><span class="mut">En az 8 karakterlik yeni şifrenizi iki kez yazın.</span>
+  <label>Yeni şifre<input id="npw" type="password" autocomplete="new-password" minlength="8" required style="font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;width:100%;background:var(--bg);color:var(--ink)"></label>
+  <label>Yeni şifre (tekrar)<input id="npw2" type="password" autocomplete="new-password" minlength="8" required style="font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;width:100%;background:var(--bg);color:var(--ink)"></label>
+  <button class="btn" type="submit" style="background:var(--ink);color:var(--bg)">Şifreyi kaydet</button>
+  <span id="rmsg" class="small mut" role="status"></span>
+ </form>
+</section>
+<div id="app" hidden>
+<header class="top band" style="padding-block:14px">
+ <div class="wrap" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;width:100%">
+  <b>BURAK ERP</b><span>Alpin Endüstriyel Mutfak</span>
+ </div>
+</header>
+<div class="shell">
+<aside class="side" aria-label="Ana menü">
+ <div class="sg" data-g="memorial"><button type="button" class="top" aria-expanded="false" aria-controls="sg-memorial">MEMORIAL <span class="car" aria-hidden="true">▸</span></button>
+ <div class="subs" id="sg-memorial">
+ <a href="#ozet" class="sub" data-side="ozet">Özet</a>
+ <a href="#teslim" class="sub" data-side="teslim">Teslim edilenler</a>
+ <a href="#kismi" class="sub" data-side="kismi">Kısmi teslim</a>
+ <a href="#acik-siparis" class="sub" data-side="acik-siparis">Açık siparişler</a>
+ <a href="#acik" class="sub" data-side="acik">Açık ürünler</a>
+ <a href="#siparisler" class="sub" data-side="siparisler">Tüm siparişler</a>
+ <a href="#faturalar" class="sub" data-side="faturalar">Faturalar</a>
+ <a href="#kontrol" class="sub" data-side="kontrol">Kontrol</a>
+ </div></div>
+ <a href="#hatirlatici" class="top" data-side="hatirlatici">HATIRLATICI <span class="cnt" id="remCnt" hidden></span></a>
+ <div class="sg" data-g="cari"><button type="button" class="top" aria-expanded="false" aria-controls="sg-cari">CARİ <span class="car" aria-hidden="true">▸</span></button>
+ <div class="subs" id="sg-cari">
+ <a href="#alacaklar" class="sub" data-side="alacaklar">Alacaklarım</a>
+ <a href="#verecekler" class="sub" data-side="verecekler">Vereceklerim</a>
+ </div></div>
+</aside>
+<main class="band"><div class="wrap" id="view"><div class="empty">Veriler yükleniyor…</div></div></main>
+</div>
+<footer class="band mut small" style="border-top:1px solid var(--line)"><span id="who"></span> · <button class="btn sm" id="logout">Çıkış</button><br><div class="wrap">Kaynak: cem.sakizci@memorial.com.tr SAS formları (PDF) ve EDM gelen/giden e-fatura XML'leri. Durum, siparişteki SAS no + ürün kodunun aktif (iade edilmemiş) faturalardaki miktarla karşılaştırılmasıyla hesaplanır. <span id="sync" class="sync"></span></div></footer>
+</div>
+<script>
+{
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const tl=n=>(n??0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ₺';
+const tl0=n=>(n??0).toLocaleString('tr-TR',{maximumFractionDigits:0})+' ₺';
+const q=n=>(n??0).toLocaleString('tr-TR',{maximumFractionDigits:2});
+const d2=s=>{if(!s)return'';if(/^\d{4}-/.test(s)){const[a,b,c]=s.slice(0,10).split('-');return c+'.'+b+'.'+a}return s};
+const sortD=s=>{if(!s)return'';const m=s.match(/(\d{2})\.(\d{2})\.(\d{4})/);return m?m[3]+m[2]+m[1]:s};
+let D=null,manual={},db=null,me=null;
+const ui={filter:'acik',search:'',open:null,ifilter:'hepsi'};
+const ST={'AÇIK':['Açık','p-ac'],'TESLİM/FATURALI':['Teslim · faturalı','p-ok'],'KISMİ':['Kısmi','p-ks'],'FAZLA FATURA':['Fazla fatura','p-fz'],'İADE EDİLDİ-YENİDEN FATURA':['İade · yeniden kesilecek','p-ks']};
+function build(raw){
+ const lines=raw.lines.map(l=>({sas:l[0],kod:l[1],urun:l[2],birim:l[3],sip:l[4],fiyat:l[5],tutar:l[6],fat:l[7],iade:l[8],durum:l[9],faturalar:l[10]}));
+ const orders=raw.orders.map(o=>{const ls=lines.filter(l=>l.sas===o.sas);
+  const acikT=ls.reduce((a,l)=>a+Math.max(0,l.sip-l.fat)*l.fiyat,0);
+  const fazla=ls.some(l=>l.durum==='FAZLA FATURA');
+  const all=ls.every(l=>l.fat>=l.sip-1e-9), none=ls.every(l=>l.fat<=1e-9);
+  const durum=all?'teslim':none?'acik':'kismi';
+  return {...o,yer:o.teslimYeri.split(' / ')[0].replace('Memorial ',''),ls,acikT,fazla,durum,iade:ls.some(l=>l.iade>0)}});
+ const ilines=raw.ilines.map(l=>({fat:l[0],sas:l[1],es:l[2],kod:l[3],ad:l[4],mik:l[5],fiyat:l[6],tutar:l[7]}));
+ const invoices=raw.invoices.map(i=>({...i,ls:ilines.filter(l=>l.fat===i.no)}));
+ return {orders,lines,invoices,ilines,guncelleme:raw.guncelleme,sonTarama:raw.sonTarama,sonEklenen:raw.sonEklenen||[],ted:raw.tedarikci||{}};
+}
+const supN=k=>D&&D.ted[k]||'Tanımsız';const sup=k=>{const n=supN(k);return ` <span class="pill ${n==='GLF Gıda'?'p-glf':n==='İstanbul Kahve'?'p-ist':'p-ia'}">${esc(n==='GLF Gıda'?'GLF':n)}</span>`};
+const eff=o=>{const m=manual[o.sas];if(m&&m.teslim)return 'teslim';return o.durum};
+const effPill=o=>{const m=manual[o.sas];if(m&&m.teslim&&o.durum!=='teslim')return '<span class="pill p-ok">Teslim (elle)</span>';return o.durum==='teslim'?'<span class="pill p-ok">Teslim edildi</span>':o.durum==='acik'?(o.iade?'<span class="pill p-ks">İade · yeniden kesilecek</span>':'<span class="pill p-ac">Açık</span>'):'<span class="pill p-ks">Kısmi teslim</span>'};
+function setGroup(g,open){g.classList.toggle('open',open);const b=g.querySelector('button.top');if(b)b.setAttribute('aria-expanded',open);try{localStorage.setItem('sg-'+g.dataset.g,open?'1':'0')}catch(e){}}
+document.querySelectorAll('aside.side .sg').forEach(g=>{let st=null;try{st=localStorage.getItem('sg-'+g.dataset.g)}catch(e){}if(st==='1')setGroup(g,true);g.querySelector('button.top').onclick=()=>setGroup(g,!g.classList.contains('open'))});
+let lastTab='';function setTab(){const hh=(location.hash||'#ozet').slice(1);if(hh!==lastTab&&lastTab){if(!(hh==='siparisler'&&ui.open))ui.search=''}lastTab=hh;const h=(location.hash||'#ozet').slice(1);const known=[...document.querySelectorAll('aside.side a[data-side]')].map(a=>a.dataset.side);const side=known.includes(h)?h:'ozet';for(const a of document.querySelectorAll('aside.side a[data-side]'))a.toggleAttribute('aria-current',a.dataset.side===side);for(const g of document.querySelectorAll('aside.side .sg')){const has=!!g.querySelector(`a[data-side="${side}"]`);g.classList.toggle('cur',has);if(has&&!g.dataset.auto){g.dataset.auto='1';setGroup(g,true)}}render(h)}
+function render(h){const v=document.getElementById('view');if(NEWV.includes(h)){renderNew(h);return}if(!D)return;
+ if(h==='teslim')v.innerHTML=vList('teslim');else if(h==='kismi')v.innerHTML=vKismi();else if(h==='acik-siparis')v.innerHTML=vList('acik');else if(h==='acik')v.innerHTML=vOpen();else if(h==='siparisler')v.innerHTML=vOrders();else if(h==='faturalar')v.innerHTML=vInvoices();else if(h==='kontrol')v.innerHTML=vCheck();else v.innerHTML=vSummary();
+ bindView(h)}
+function vSummary(){
+ const os=D.orders;const acik=os.filter(o=>eff(o)!=='teslim');const acikT=acik.reduce((a,o)=>a+o.acikT,0);
+ const act=D.invoices.filter(i=>i.durum==='AKTİF'),ia=D.invoices.filter(i=>i.durum!=='AKTİF');
+ const chk=D.lines.filter(l=>l.durum==='FAZLA FATURA'||l.durum==='KISMİ').length;
+ const byYer={};for(const o of os){const y=o.yer;(byYer[y]=byYer[y]||{ac:0,ok:0,ks:0});const tot=o.toplam,open=o.acikT;if(eff(o)==='teslim')byYer[y].ok+=tot;else{byYer[y].ac+=open;byYer[y].ok+=tot-open}}
+ const ys=Object.entries(byYer).sort((a,b)=>(b[1].ac)-(a[1].ac)||(b[1].ok-a[1].ok));const mx=Math.max(...ys.map(([,v])=>v.ac+v.ok));
+ const bars=ys.map(([k,v])=>`<div class="r"><span>${esc(k)}</span><div class="t"><i class="c-ac" style="width:${v.ac/mx*100}%"></i><i class="c-ok" style="width:${v.ok/mx*100}%"></i></div><span class="n">${tl0(v.ac)}</span></div>`).join('');
+ const sts=[['teslim','Teslim edilen','c-ok'],['kismi','Kısmi teslim','c-ks'],['acik','Açık (faturasız)','c-ac']].map(([k,l,c])=>{const n=os.filter(o=>eff(o)===k).length;return `<div class="r"><span>${l}</span><div class="t"><i class="${c}" style="width:${n/os.length*100}%"></i></div><span class="n">${n} sipariş</span></div>`}).join('');
+ return `<h1>${acik.length} Memorial siparişi teslim/fatura bekliyor: ${tl0(acikT)}</h1>
+ <p class="lede">84 SAS siparişinin ${os.length-acik.length} tanesi aktif faturayla tamamen kapandı. Memorial ${ia.length} faturayı “iş birimi sistem onayı eksik” gerekçesiyle iade etti; çoğunda SAS numarası yerine 400001509 yazılmış.</p>
+ <div class="kpis"><div class="kpi hot"><div class="v">${tl0(acikT)}</div><div class="l">açık sipariş tutarı (KDV hariç)</div></div>
+ <div class="kpi"><div class="v">${tl0(act.reduce((a,i)=>a+i.matrah,0))}</div><div class="l">${act.length} aktif fatura (matrah)</div></div>
+ <div class="kpi"><div class="v">${tl0(ia.reduce((a,i)=>a+i.matrah,0))}</div><div class="l">${ia.length} fatura iade/red edildi</div></div>
+ <div class="kpi"><div class="v">${chk}</div><div class="l">kalem kontrol bekliyor</div></div></div>
+ <div class="grid2"><section><h2>Teslim yerine göre açık tutar</h2><div class="bars">${bars}</div>
+ <div class="legend"><span><i class="c-ac"></i>açık</span><span><i class="c-ok"></i>faturalı</span></div></section>
+ <section><h2>Sipariş durumu</h2><div class="bars">${sts}</div>
+ <div class="note"><b>Memorial fatura kuralı:</b> Her faturada kalem açıklamasına SAS no (3901xxxxxx) yazılmalı ve e-fatura URN:MAIL:MEMORIALGENELMUDURLUKPK@MEMORIAL.COM.TR alias'ına gönderilmeli. Aksi halde iade/red ediliyor.</div>
+ <p><a class="btn" href="#kontrol" style="text-decoration:none;display:inline-flex;align-items:center">Kontrol listesine git</a></p></section></div>`}
+function fOrders(){const s=ui.search.toLocaleLowerCase('tr');return D.orders.filter(o=>{const e=eff(o);if(ui.filter==='acik'&&e==='teslim')return false;if(ui.filter==='teslim'&&e!=='teslim')return false;if(ui.filter==='iade'&&!o.iade)return false;if(ui.filter==='fazla'&&!o.fazla)return false;
+ if(s&&!(o.sas+' '+o.teslimYeri+' '+o.ls.map(l=>l.urun+' '+l.kod).join(' ')).toLocaleLowerCase('tr').includes(s))return false;return true}).sort((a,b)=>sortD(b.tarih).localeCompare(sortD(a.tarih))||b.sas.localeCompare(a.sas))}
+function openRows(){const today=new Date();const out=[];for(const o of D.orders){if(eff(o)==='teslim')continue;for(const l of o.ls){const k=Math.max(0,l.sip-l.fat);if(k<=1e-9)continue;
+ const m=(o.teslimTarihi||'').match(/(\d{2})\.(\d{2})\.(\d{4})/);const due=m?new Date(+m[3],m[2]-1,+m[1]):null;const gun=due?Math.floor((today-due)/864e5):null;
+ out.push({o,l,kalan:k,tutar:k*l.fiyat,gun})}}return out}
+function vOpen(){const rs=openRows();const s=ui.search.toLocaleLowerCase('tr');
+ const sf=ui.sup||'hepsi';const f=rs.filter(r=>(!s||(r.o.sas+' '+r.o.yer+' '+r.l.urun+' '+r.l.kod).toLocaleLowerCase('tr').includes(s))&&(sf==='hepsi'||supN(r.l.kod)===sf));
+ const bySup={};for(const r of rs.filter(r=>!s||(r.o.sas+' '+r.o.yer+' '+r.l.urun+' '+r.l.kod).toLocaleLowerCase('tr').includes(s))){const n=supN(r.l.kod);bySup[n]=(bySup[n]||0)+r.tutar}
+ const byP={};for(const r of f){const k=r.l.kod;(byP[k]=byP[k]||{urun:r.l.urun,birim:r.l.birim,mik:0,tutar:0,sas:new Set,yer:new Set});const p=byP[k];p.mik+=r.kalan;p.tutar+=r.tutar;p.sas.add(r.o.sas);p.yer.add(r.o.yer)}
+ const ps=Object.entries(byP).sort((a,b)=>supN(a[0]).localeCompare(supN(b[0]),'tr')||b[1].tutar-a[1].tutar);
+ const byY={};for(const r of f)(byY[r.o.yer]=byY[r.o.yer]||[]).push(r);
+ const ys=Object.entries(byY).sort((a,b)=>b[1].reduce((x,r)=>x+r.tutar,0)-a[1].reduce((x,r)=>x+r.tutar,0));
+ const tot=f.reduce((a,r)=>a+r.tutar,0);
+ const late=g=>g==null?'':g>0?`<span class="pill p-ac">${g} gün gecikti</span>`:g===0?'<span class="pill p-ks">bugün</span>':`<span class="pill p-ia">${-g} gün var</span>`;
+ window._openText=ys.map(([y,a])=>y+'\n'+a.map(r=>`  ${r.o.sas}  ${r.l.urun}  ${q(r.kalan)} ${r.l.birim}  [${supN(r.l.kod)}]`).join('\n')).join('\n\n');
+ return `<h1>Teslim edilmeyen ürünler: ${f.length} kalem, ${tl0(tot)}</h1>
+ <p class="lede">Faturası kesilmemiş ya da iade edilip yeniden kesilmemiş tüm sipariş kalemleri. Elle “teslim edildi” işaretlenen siparişler listede yok. ${D.sonTarama?'Mail son tarama: '+esc(D.sonTarama)+'.':''}</p>
+ <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:6px"><input type="search" id="srch" placeholder="SAS no, teslim yeri veya ürün ara" value="${esc(ui.search)}" aria-label="Ara"><button class="btn" id="copyOpen">Listeyi kopyala</button><span class="small mut" id="copyMsg"></span></div>
+ <div class="chips" role="group" aria-label="Tedarikçi">${[['hepsi','Tüm tedarikçiler'],['GLF Gıda','GLF Gıda'],['İstanbul Kahve','İstanbul Kahve']].map(([k,l])=>`<button data-sup="${esc(k)}" aria-pressed="${sf===k}">${esc(l)}${k!=='hepsi'&&bySup[k]?' · '+tl0(bySup[k]):''}</button>`).join('')}</div>
+ <h2>Ürün bazında (tedarikçiden alınacak)</h2>
+ <div class="scroll"><table class="stack"><thead><tr><th>Kod</th><th>Ürün</th><th>Tedarikçi</th><th class="n">Açık miktar</th><th class="n">Tutar</th><th class="n">Sipariş</th><th>Teslim yerleri</th></tr></thead><tbody>
+ ${ps.map(([k,p])=>`<tr><td>${esc(k)}</td><td><b>${esc(p.urun)}</b></td><td>${sup(k)}</td><td class="n">${q(p.mik)} ${esc(p.birim)}</td><td class="n">${tl(p.tutar)}</td><td class="n">${p.sas.size}</td><td class="small">${[...p.yer].map(esc).join(', ')}</td></tr>`).join('')}</tbody></table></div>
+ <h2>Teslim yerine göre</h2>
+ ${ys.map(([y,a])=>`<h3 style="margin:22px 0 6px;font-size:17px">${esc(y)} <span class="mut small">· ${a.length} kalem · ${tl(a.reduce((x,r)=>x+r.tutar,0))}</span></h3>
+ <table class="stack"><thead><tr><th>SAS no</th><th>Sipariş</th><th>İstenen teslim</th><th>Ürün</th><th class="n">Kalan</th><th class="n">Tutar</th><th>Durum</th></tr></thead><tbody>
+ ${a.sort((x,z)=>(z.gun??-999)-(x.gun??-999)).map(r=>`<tr><td><a href="#siparisler" data-go="${esc(r.o.sas)}">${esc(r.o.sas)}</a></td><td>${esc(r.o.tarih)}</td><td>${esc(r.o.teslimTarihi)} ${late(r.gun)}</td><td>${esc(r.l.urun)}${sup(r.l.kod)}${r.l.durum==='İADE EDİLDİ-YENİDEN FATURA'||r.l.iade>0?' <span class="pill p-ks">iade gördü</span>':''}${r.l.fat>0?' <span class="pill p-ks">kısmi</span>':''}</td><td class="n">${q(r.kalan)} ${esc(r.l.birim)}</td><td class="n">${tl(r.tutar)}</td><td>${(D.sonEklenen||[]).includes(r.o.sas)?'<span class="pill p-fz">yeni</span>':''}</td></tr>`).join('')}</tbody></table>`).join('')||'<div class="empty">Açık ürün yok.</div>'}`}
+function lineSt(l){if(l.fat>=l.sip-1e-9)return ['Teslim edildi','p-ok'];if(l.fat>0)return ['Kısmi: '+q(l.fat)+'/'+q(l.sip),'p-ks'];return l.iade>0?['Teslim edilmedi · fatura iade','p-ac']:['Teslim edilmedi','p-ac']}
+function vList(kind){const s=ui.search.toLocaleLowerCase('tr');const sf=kind==='acik'?(ui.sup||'hepsi'):'hepsi';
+ let os=D.orders.filter(o=>kind==='teslim'?eff(o)==='teslim':eff(o)==='acik');
+ if(s)os=os.filter(o=>(o.sas+' '+o.teslimYeri+' '+o.ls.map(l=>l.urun+' '+l.kod).join(' ')).toLocaleLowerCase('tr').includes(s));
+ const cnt={};if(kind==='acik')for(const o of os)for(const n of new Set(o.ls.map(l=>supN(l.kod))))cnt[n]=(cnt[n]||0)+1;
+ const vis=o=>o.ls.filter(l=>sf==='hepsi'||supN(l.kod)===sf);
+ if(sf!=='hepsi')os=os.filter(o=>vis(o).length);
+ os.sort((a,b)=>sortD(b.tarih).localeCompare(sortD(a.tarih))||b.sas.localeCompare(a.sas));
+ const amt=o=>kind==='teslim'?o.toplam:vis(o).reduce((a,l)=>a+Math.max(0,l.sip-l.fat)*l.fiyat,0);
+ const tot=os.reduce((a,o)=>a+amt(o),0);
+ const fat=o=>[...new Set(o.ls.flatMap(l=>l.faturalar.filter(f=>!f.endsWith('(İ)'))))];
+ const ttl=kind==='teslim'?`Teslim edilen siparişler: ${os.length} · ${tl0(tot)}`:`Açık siparişler: ${os.length} · ${tl0(tot)}${sf!=='hepsi'?' <span class="mut" style="font-size:.6em">('+esc(sf)+')</span>':''}`;
+ const lede=kind==='teslim'?'Tüm kalemleri aktif (iade edilmemiş) faturayla kesilmiş siparişler. Elle “teslim edildi” işaretlenenler de burada.':'Hiçbir kalemi teslim edilmemiş ve faturası kesilmemiş siparişler. Faturası kesilip Memorial tarafından iade edilenler de burada; yeniden kesilmesi gerekiyor.';
+ const chips=kind==='acik'?`<div class="chips" role="group" aria-label="Tedarikçi filtresi">${[['hepsi','Tüm tedarikçiler'],['GLF Gıda','GLF'],['İstanbul Kahve','İstanbul Kahve']].map(([k,l])=>`<button data-sup="${esc(k)}" aria-pressed="${sf===k}">${esc(l)}${k!=='hepsi'?' · '+(cnt[k]||0)+' sipariş':''}</button>`).join('')}</div>`:'';
+ const rows=os.map(o=>{const open=ui.open===o.sas;const m=manual[o.sas]||{};const ls=kind==='teslim'?o.ls:vis(o);
+  const urun=ls.map(l=>`<div class="li">${esc(l.urun)} <span class="mut">${q(kind==='teslim'?l.sip:l.sip-l.fat)} ${esc(l.birim)}</span></div>`).join('');
+  const tedc=ls.map(l=>`<div class="li">${sup(l.kod)}</div>`).join('');
+  return `<tr class="row" data-sas="${esc(o.sas)}" tabindex="0" aria-expanded="${open}"><td><b>${esc(o.sas)}</b>${o.degisiklik?' <span class="pill p-ia">değişiklik</span>':''}${(D.sonEklenen||[]).includes(o.sas)?' <span class="pill p-fz">yeni</span>':''}</td><td>${esc(o.tarih)}</td><td>${esc(o.yer)}</td><td>${urun}</td>${kind==='acik'?`<td>${tedc}</td>`:''}<td class="n">${tl(amt(o))}</td><td class="small">${kind==='teslim'?(fat(o).map(esc).join('<br>')||(m.teslim?'elle işaretlendi':'—')):(o.iade?'<span class="pill p-ks">fatura iade edildi</span>':'<span class="pill p-ac">faturasız</span>')+(o.fazla?' <span class="pill p-fz">fazla fatura</span>':'')}</td></tr>`+(open?`<tr class="detail"><td colspan="${kind==='acik'?7:6}"><div class="in">${detail(o)}</div></td></tr>`:'')}).join('');
+ return `<h1>${ttl}</h1><p class="lede">${lede}</p>${chips}
+ <input type="search" id="srch" placeholder="SAS no, teslim yeri veya ürün ara" value="${esc(ui.search)}" aria-label="Ara">
+ ${os.length?`<table class="stack" style="margin-top:12px"><thead><tr><th>SAS no</th><th>Tarih</th><th>Teslim yeri</th><th>Ürünler</th>${kind==='acik'?'<th>Tedarikçi</th>':''}<th class="n">${kind==='teslim'?'Tutar':'Açık tutar'}</th><th>${kind==='teslim'?'Faturalar':'Durum'}</th></tr></thead><tbody>${rows}</tbody></table>`:'<div class="empty">Bu listede sipariş yok.</div>'}`}
+function vKismi(){const sf=ui.sup||'hepsi';const os=D.orders.filter(o=>eff(o)==='kismi'&&(sf==='hepsi'||o.ls.some(l=>l.fat<l.sip-1e-9&&supN(l.kod)===sf))).sort((a,b)=>sortD(b.tarih).localeCompare(sortD(a.tarih)));
+ const tot=os.reduce((a,o)=>a+o.acikT,0);
+ return `<h1>Kısmi teslim edilen siparişler: ${os.length} · kalan ${tl0(tot)}</h1><p class="lede">Bazı ürünleri faturalı teslim edilmiş, bazıları bekleyen siparişler. Her siparişte hangi ürünün teslim edildiği, hangisinin beklediği ayrı gösteriliyor.</p>
+ <div class="chips" role="group" aria-label="Tedarikçi filtresi">${[['hepsi','Tüm tedarikçiler'],['GLF Gıda','GLF'],['İstanbul Kahve','İstanbul Kahve']].map(([k,l])=>`<button data-sup="${esc(k)}" aria-pressed="${sf===k}">${esc(l)}</button>`).join('')}</div>
+ ${os.map(o=>{const done=o.ls.filter(l=>l.fat>=l.sip-1e-9),part=o.ls.filter(l=>l.fat>0&&l.fat<l.sip-1e-9),none=o.ls.filter(l=>l.fat<=1e-9);
+ const li=(ls,f)=>ls.length?ls.map(f).join(''):'<li class="mut">—</li>';
+ return `<section style="border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0">
+ <div style="display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline"><b style="font-size:18px">${esc(o.sas)}</b><span class="mut">${esc(o.tarih)} · ${esc(o.yer)} · istenen teslim ${esc(o.teslimTarihi)}</span><span style="margin-left:auto" class="n"><b>${tl(o.acikT)}</b> <span class="mut small">kalan / ${tl(o.toplam)}</span></span></div>
+ <div class="grid2" style="margin-top:10px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+ <div><div class="small" style="font-weight:700;color:var(--ok)">Teslim edildi</div><ul style="margin:6px 0;padding-left:18px">${li(done,l=>`<li>${esc(l.urun)} · ${q(l.sip)} ${esc(l.birim)} <span class="mut small">${l.faturalar.filter(f=>!f.endsWith('(İ)')).map(esc).join(', ')}</span></li>`)}${part.map(l=>`<li>${esc(l.urun)} · ${q(l.fat)} / ${q(l.sip)} ${esc(l.birim)} <span class="pill p-ks">kısmi</span> <span class="mut small">${l.faturalar.filter(f=>!f.endsWith('(İ)')).map(esc).join(', ')}</span></li>`).join('')}</ul></div>
+ <div><div class="small" style="font-weight:700;color:var(--bad)">Teslim edilmedi</div><ul style="margin:6px 0;padding-left:18px">${li([...part,...none],l=>`<li>${esc(l.urun)} · <b>${q(l.sip-l.fat)} ${esc(l.birim)}</b> bekliyor · ${tl((l.sip-l.fat)*l.fiyat)}${sup(l.kod)}${l.iade>0?' <span class="pill p-ks">fatura iade</span>':''}</li>`)}</ul></div></div></section>`}).join('')||'<div class="empty">Kısmi teslim edilen sipariş yok.</div>'}`}
+function vOrders(){const os=fOrders();const ch=[['acik','Açık / kısmi'],['teslim','Teslim edilen'],['iade','İade gören'],['fazla','Fazla faturalı'],['hepsi','Hepsi']];
+ const rows=os.map(o=>{const m=manual[o.sas]||{};const open=ui.open===o.sas;
+  return `<tr class="row" data-sas="${esc(o.sas)}" tabindex="0" aria-expanded="${open}"><td><b>${esc(o.sas)}</b>${o.degisiklik?' <span class="pill p-ia">değişiklik</span>':''}</td><td>${esc(o.tarih)}</td><td>${esc(o.yer)}</td><td>${o.ls.map(l=>esc(l.urun)).join(', ')}</td><td class="n">${tl(o.toplam)}</td><td class="n">${o.acikT>0&&eff(o)!=='teslim'?tl(o.acikT):'—'}</td><td>${effPill(o)}${o.fazla?' <span class="pill p-fz">fazla fatura</span>':''}${m.not?' <span class="pill p-ia">not</span>':''}</td></tr>`+
+  (open?`<tr class="detail"><td colspan="7"><div class="in">${detail(o)}</div></td></tr>`:'')}).join('');
+ return `<h1>Siparişler</h1><p class="lede">Satıra tıklayınca kalemler, kesilen faturalar ve iade kayıtları açılır. Faturası olmadan teslim ettiğiniz siparişi elle “teslim edildi” olarak işaretleyebilirsiniz.</p>
+ <div class="chips" role="group" aria-label="Filtre">${ch.map(([k,l])=>`<button data-f="${k}" aria-pressed="${ui.filter===k}">${l}</button>`).join('')}</div>
+ <input type="search" id="srch" placeholder="SAS no, teslim yeri veya ürün ara" value="${esc(ui.search)}" aria-label="Ara">
+ <p class="mut small">${os.length} sipariş · açık tutar ${tl(os.filter(o=>eff(o)!=='teslim').reduce((a,o)=>a+o.acikT,0))}</p>
+ ${os.length?`<table class="stack"><thead><tr><th>SAS no</th><th>Tarih</th><th>Teslim yeri</th><th>Ürünler</th><th class="n">Tutar</th><th class="n">Açık</th><th>Durum</th></tr></thead><tbody>${rows}</tbody></table>`:'<div class="empty">Bu filtrede sipariş yok.</div>'}`}
+function detail(o){const m=manual[o.sas]||{};
+ const t=`<div class="scroll"><table><thead><tr><th>Kalem</th><th>Ürün</th><th class="n">Sipariş</th><th class="n">Faturalı</th><th class="n">İade</th><th class="n">Kalan</th><th class="n">Birim fiyat</th><th>Teslim</th><th>Faturalar</th></tr></thead><tbody>${o.ls.map(l=>{const s=lineSt(l);return `<tr><td>${esc(l.kod)}</td><td>${esc(l.urun)}${sup(l.kod)}</td><td class="n">${q(l.sip)} ${esc(l.birim)}</td><td class="n">${q(l.fat)}</td><td class="n">${q(l.iade)}</td><td class="n">${q(Math.max(0,l.sip-l.fat))}</td><td class="n">${tl(l.fiyat)}</td><td><span class="pill ${s[1]}">${s[0]}</span></td><td class="small">${l.faturalar.map(esc).join(', ')||'—'}</td></tr>`}).join('')}</tbody></table></div>`;
+ return `${t}<p class="small mut">Sipariş ${esc(o.tarih)} · istenen teslim ${esc(o.teslimTarihi)} · ${esc(o.sevk)} · ${esc(o.odeme||'—')} · mail ${esc(o.mail)}</p>
+ <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start"><label class="btn sm" style="display:inline-flex;gap:8px;align-items:center"><input type="checkbox" data-teslim="${esc(o.sas)}" ${m.teslim?'checked':''} ${db?'':'disabled'}> Teslim edildi (elle)</label>
+ <div style="flex:1;min-width:220px"><textarea data-not="${esc(o.sas)}" placeholder="Not (irsaliye no, teslim alan, vb.)" ${db?'':'disabled'}>${esc(m.not||'')}</textarea><button class="btn sm" data-save="${esc(o.sas)}" ${db?'':'disabled'}>Notu kaydet</button> <span class="small mut">${m.at?'Son değişiklik '+esc(new Date(m.at).toLocaleString('tr-TR'))+(m.by?' · '+esc(m.by):''):''}</span></div></div>`}
+function vInvoices(){const ch=[['hepsi','Hepsi'],['aktif','Aktif'],['iade','İade / red']];
+ const is=D.invoices.filter(i=>ui.ifilter==='hepsi'||(ui.ifilter==='aktif'?i.durum==='AKTİF':i.durum!=='AKTİF')).sort((a,b)=>b.tarih.localeCompare(a.tarih)||b.no.localeCompare(a.no));
+ return `<h1>Memorial'e kesilen faturalar</h1><p class="lede">EDM giden faturaları ve Memorial'den gelen iade faturaları birlikte. İade edilen fatura matrahı sipariş durumuna sayılmaz.</p>
+ <div class="chips">${ch.map(([k,l])=>`<button data-if="${k}" aria-pressed="${ui.ifilter===k}">${l}</button>`).join('')}</div>
+ <table class="stack"><thead><tr><th>Fatura no</th><th>Tarih</th><th>Müşteri</th><th>Kalemler (SAS)</th><th class="n">Matrah</th><th class="n">Toplam</th><th>Durum</th></tr></thead><tbody>
+ ${is.map(i=>`<tr><td><b>${esc(i.no)}</b></td><td>${d2(i.tarih)}</td><td>${esc(i.musteri)}</td><td class="small">${i.ls.map(l=>`${esc(l.sas||'SAS yok')}${l.es==='tahmini'?'*':''} · ${esc((l.ad||'').replace(/^\d+\s*/,''))} × ${q(l.mik)}`).join('<br>')}</td><td class="n">${tl(i.matrah)}</td><td class="n">${tl(i.toplam)}</td><td>${i.durum==='AKTİF'?'<span class="pill p-ok">Aktif</span>':`<span class="pill p-ac">İade</span><div class="small mut">${esc(i.iade.no)} · ${d2(i.iade.tarih)}<br>${esc(i.iade.sebep)}</div>`}</td></tr>`).join('')}</tbody></table>
+ <p class="small mut">* SAS no faturada yazmıyor; miktar ve teslim yerine göre tahmini eşleştirildi.</p>`}
+function vCheck(){const fz=D.lines.filter(l=>l.durum==='FAZLA FATURA'),ks=D.lines.filter(l=>l.durum==='KISMİ'),ie=D.lines.filter(l=>l.durum==='İADE EDİLDİ-YENİDEN FATURA');
+ const orph=D.ilines.filter(l=>!l.sas&&D.invoices.find(i=>i.no===l.fat&&i.durum==='AKTİF'));
+ const tbl=(ls,lab)=>`<table class="stack"><thead><tr><th>SAS no</th><th>Ürün</th><th class="n">Sipariş</th><th class="n">Faturalı</th><th class="n">Fark</th><th>Faturalar</th></tr></thead><tbody>${ls.map(l=>`<tr><td><b>${esc(l.sas)}</b></td><td>${esc(l.urun)}</td><td class="n">${q(l.sip)}</td><td class="n">${q(l.fat)}</td><td class="n">${q(l.fat-l.sip)} ${esc(l.birim)} · ${tl((l.fat-l.sip)*l.fiyat)}</td><td class="small">${l.faturalar.map(esc).join(', ')}</td></tr>`).join('')}</tbody></table>`;
+ return `<h1>Kontrol listesi</h1><p class="lede">Fatura ile sipariş arasında tutmayan kalemler. Fazla faturada aynı SAS iki kez faturalanmış olabilir; Memorial bunları da iade edebilir.</p>
+ <h2>Fazla faturalanan kalemler (${fz.length})</h2>${tbl(fz)}
+ <h2>Eksik faturalanan kalemler (${ks.length})</h2>${tbl(ks)}
+ <h2>İade edildi, yeniden kesilmedi (${ie.length})</h2>${tbl(ie)}
+ <h2>SAS numarası olmayan aktif fatura satırları (${orph.length})</h2>
+ <table class="stack"><thead><tr><th>Fatura</th><th>Kalem</th><th class="n">Miktar</th><th class="n">Fiyat</th></tr></thead><tbody>${orph.map(l=>`<tr><td>${esc(l.fat)}</td><td>${esc(l.ad)}</td><td class="n">${q(l.mik)}</td><td class="n">${tl(l.fiyat)}</td></tr>`).join('')}</tbody></table>
+ <div class="note">Bu satırlarda “400001509” yazıyor; diğerleri gibi “iş birimi onayı eksik” iadesi gelme riski yüksek.</div>`}
+function bindView(h){const v=document.getElementById('view');
+ v.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{ui.filter=b.dataset.f;ui.open=null;render(h)});
+ v.querySelectorAll('[data-if]').forEach(b=>b.onclick=()=>{ui.ifilter=b.dataset.if;render(h)});
+ const s=v.querySelector('#srch');if(s){s.oninput=()=>{ui.search=s.value;const pos=s.selectionStart;render(h);const n=document.getElementById('srch');n.focus();n.setSelectionRange(pos,pos)}}
+ v.querySelectorAll('tr.row').forEach(r=>{const t=()=>{ui.open=ui.open===r.dataset.sas?null:r.dataset.sas;render(h)};r.onclick=t;r.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();t()}}});
+ v.querySelectorAll('[data-teslim]').forEach(c=>{c.onclick=e=>e.stopPropagation();c.onchange=()=>save(c.dataset.teslim,{teslim:c.checked})});
+ v.querySelectorAll('[data-save]').forEach(b=>b.onclick=e=>{e.stopPropagation();const t=v.querySelector(`[data-not="${CSS.escape(b.dataset.save)}"]`);save(b.dataset.save,{not:t.value})});
+ v.querySelectorAll('[data-sup]').forEach(b=>b.onclick=()=>{ui.sup=b.dataset.sup;render(h)});
+ const cp=v.querySelector('#copyOpen');if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(window._openText||'');document.getElementById('copyMsg').textContent='Kopyalandı'}catch(e){document.getElementById('copyMsg').textContent='Kopyalanamadı'}};
+ v.querySelectorAll('[data-go]').forEach(a=>a.onclick=()=>{ui.filter='hepsi';ui.search='';ui.open=a.dataset.go});
+ v.querySelectorAll('textarea').forEach(t=>t.onclick=e=>e.stopPropagation())}
+function sync(t){const s=document.getElementById('sync');if(s)s.textContent=t}
+// ---------- Hatırlatıcı ve Cari ----------
+const NEWV=['hatirlatici','alacaklar','verecekler'];
+const today=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)};
+const daysSince=s=>s?Math.floor((Date.parse(today())-Date.parse(String(s).slice(0,10)))/864e5):null;
+const cui={cfilter:'acik',party:'',openP:null,from:'',to:'',age:'',src:'',detay:false};
+let newSeq=0;
+async function renderNew(h){const v=document.getElementById('view');const my=++newSeq;
+ if(!v.dataset.nv||v.dataset.nv!==h){v.innerHTML='<div class="empty">Yükleniyor…</div>';v.dataset.nv=h}
+ try{const html=h==='hatirlatici'?await vReminders():await vCari(h==='alacaklar'?'alacak':'verecek');if(my!==newSeq)return;v.innerHTML=html;bindNew(h)}
+ catch(e){if(my===newSeq)v.innerHTML='<div class="empty">Okunamadı: '+esc(e.message||e)+'</div>'}}
+async function remCount(){try{const {count}=await sb.from('reminders').select('id',{count:'exact',head:true}).eq('done',false).lte('due_date',today());const c=document.getElementById('remCnt');if(c){c.hidden=!count;c.textContent=count||''}}catch(e){}}
+async function vReminders(){
+ const rs=await all(sb.from('reminders').select('*').order('done').order('due_date',{ascending:true,nullsFirst:false}).order('created_at',{ascending:false}).limit(1000));
+ const open=rs.filter(r=>!r.done),done=rs.filter(r=>r.done);remCount();
+ const row=r=>{const late=!r.done&&r.due_date&&r.due_date<today();const td=!r.done&&r.due_date===today();
+  return `<div class="rem${r.done?' done':''}"><input type="checkbox" data-rdone="${r.id}" ${r.done?'checked':''} aria-label="Tamamlandı"><div><p>${esc(r.body)}</p><span class="small ${late?'late':'mut'}">${r.due_date?(late?'Gecikti · ':td?'Bugün · ':'')+d2(r.due_date):'Tarihsiz'} · eklendi ${fmtT(r.created_at)}</span></div><button class="btn sm" data-rdel="${r.id}">Sil</button></div>`};
+ return `<h1>Hatırlatıcı</h1><p class="lede">Notlarınız ve yapılacaklar. Tarih verirseniz o gün ve sonrasında menüde sayı olarak görünür.</p>
+ <form class="form" id="remForm"><label style="flex:1 1 320px">Not<textarea id="remBody" required placeholder="Örn. Memorial'e ALP…045'i 3901013265 SAS no ile yeniden kes"></textarea></label><label>Tarih (isteğe bağlı)<input type="date" id="remDate"></label><button class="btn" type="submit" style="background:var(--ink);color:var(--bg)">Ekle</button><span id="remMsg" class="small mut" role="status"></span></form>
+ <h2>Bekleyen (${open.length})</h2>${open.length?open.map(row).join(''):'<div class="empty">Bekleyen not yok.</div>'}
+ ${done.length?`<details style="margin-top:20px"><summary style="cursor:pointer;font-weight:700">Tamamlananlar (${done.length})</summary>${done.map(row).join('')}</details>`:''}`}
+async function vCari(kind){
+ const dir=kind==='alacak'?'out':'in';
+ const [inv,ret,st,man]=await Promise.all([
+  all(sb.from('invoices').select('invoice_no,issue_date,party_name,net_amount,payable_amount').eq('direction',dir).eq('invoice_type','SATIS').limit(5000)),
+  all(sb.from('invoices').select('returns_invoice_no').not('returns_invoice_no','is',null).limit(5000)),
+  all(sb.from('invoice_payment_status').select('*').limit(5000)),
+  all(sb.from('cari_manual').select('*').eq('kind',kind).limit(5000))]);
+ const rset=new Set(ret.map(r=>r.returns_invoice_no));const sm={};for(const x of st)sm[x.invoice_no]=x;
+ const rows=inv.filter(i=>!rset.has(i.invoice_no)).map(i=>({key:'f:'+i.invoice_no,no:i.invoice_no,tarih:i.issue_date,taraf:i.party_name||'?',tutar:+i.payable_amount,net:+i.net_amount,odendi:!!(sm[i.invoice_no]&&sm[i.invoice_no].paid),odemeT:sm[i.invoice_no]&&sm[i.invoice_no].paid_date,elle:false}))
+  .concat(man.map(m=>({key:'m:'+m.id,id:m.id,no:m.description||'(elle)',tarih:m.due_date||String(m.created_at).slice(0,10),taraf:m.party,tutar:+m.amount,net:+m.amount,odendi:m.paid,elle:true,vade:m.due_date})));
+ const iadeN=inv.filter(i=>rset.has(i.invoice_no)).length;
+ const parties=[...new Set(rows.map(r=>r.taraf))].sort((a,b)=>a.localeCompare(b,'tr'));
+ const acik=rows.filter(r=>!r.odendi),acikT=acik.reduce((a,r)=>a+r.tutar,0),odT=rows.filter(r=>r.odendi).reduce((a,r)=>a+r.tutar,0);
+ const byP={};for(const r of acik){(byP[r.taraf]=byP[r.taraf]||{t:0,n:0,eski:r.tarih});byP[r.taraf].t+=r.tutar;byP[r.taraf].n++;if(r.tarih<byP[r.taraf].eski)byP[r.taraf].eski=r.tarih}
+ const ageOk=r=>{if(!cui.age)return true;const d=daysSince(r.tarih);const [lo,hi]=cui.age.split('-').map(Number);return d>=lo&&(isNaN(hi)||d<=hi)};
+ let list=rows.filter(r=>cui.cfilter==='hepsi'||(cui.cfilter==='acik'?!r.odendi:r.odendi)).filter(r=>!cui.party||r.taraf===cui.party).filter(r=>!cui.from||String(r.tarih)>=cui.from).filter(r=>!cui.to||String(r.tarih)<=cui.to).filter(ageOk).filter(r=>!cui.src||(cui.src==='elle'?r.elle:!r.elle)).sort((a,b)=>String(a.tarih).localeCompare(String(b.tarih)));
+ const T=kind==='alacak'?{h:'Alacaklarım',l:'Kestiğiniz satış faturaları (iade edilenler hariç) ve elle girdiğiniz alacaklar. Tahsil edileni “Ödendi” olarak işaretleyin.',taraf:'Müşteri',od:'Tahsil edildi'}:{h:'Vereceklerim',l:'Tedarikçilerin size kestiği faturalar ve elle girdiğiniz borçlar. Ödediğinizi “Ödendi” olarak işaretleyin.',taraf:'Tedarikçi',od:'Ödendi'};
+ return `<h1>${T.h}</h1><p class="lede">${T.l} Tutarlar KDV dahil.</p>
+ <div class="kpis"><div class="kpi hot"><div class="v">${tl(acikT)}</div><div class="l">Açık (${acik.length} kayıt)</div></div><div class="kpi"><div class="v">${tl(odT)}</div><div class="l">${T.od}</div></div><div class="kpi"><div class="v">${Object.keys(byP).length}</div><div class="l">${T.taraf} (açık bakiyeli)</div></div></div>
+ <h2>+ Elle ${kind==='alacak'?'alacak':'borç'} gir</h2><p class="small mut" style="margin:-4px 0 0">Faturası olmayan ${kind==='alacak'?'alacaklarınızı (avans, çek, senet, faturasız iş…)':'borçlarınızı (kira, maaş, vergi, çek, faturasız alım…)'} buradan ekleyin. Listede “elle” etiketiyle görünür.</p>
+ <form class="form" id="cForm"><label>${T.taraf}<input id="cParty2" required list="cPl"><datalist id="cPl">${parties.map(p=>`<option value="${esc(p)}">`).join('')}</datalist></label><label style="flex:1 1 220px">Açıklama<input id="cDesc" placeholder="Örn. avans, çek, faturasız iş"></label><label>Tutar (₺)<input id="cAmt" type="number" step="0.01" min="0" required style="width:9em"></label><label>Vade<input id="cDue" type="date"></label><button class="btn" type="submit" style="background:var(--ink);color:var(--bg)">Ekle</button><span id="cMsg" class="small mut" role="status"></span></form>
+ <h2>Filtre</h2>
+ <div class="form" style="margin-top:6px">
+  <label>Durum<select id="fDur" style="font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);min-height:44px">${[['acik','Açık'],['odendi',T.od],['hepsi','Hepsi']].map(([k,l])=>`<option value="${k}" ${cui.cfilter===k?'selected':''}>${l}</option>`).join('')}</select></label>
+  <label>${T.taraf}<select id="fParty" style="font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);min-height:44px"><option value="">Tümü</option>${parties.map(p=>`<option ${cui.party===p?'selected':''}>${esc(p)}</option>`).join('')}</select></label>
+  <label>Başlangıç<input type="date" id="fFrom" value="${cui.from}"></label>
+  <label>Bitiş<input type="date" id="fTo" value="${cui.to}"></label>
+  <label>Bekleme süresi<select id="fAge" style="font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);min-height:44px">${[['','Tümü'],['0-30','0–30 gün'],['31-60','31–60 gün'],['61-90','61–90 gün'],['91-','90 günden fazla']].map(([k,l])=>`<option value="${k}" ${cui.age===k?'selected':''}>${l}</option>`).join('')}</select></label>
+  <label>Kaynak<select id="fSrc" style="font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);min-height:44px">${[['','Fatura + elle'],['fatura','Yalnız fatura'],['elle','Yalnız elle']].map(([k,l])=>`<option value="${k}" ${cui.src===k?'selected':''}>${l}</option>`).join('')}</select></label>
+  <label style="flex-direction:row;display:flex;align-items:center;gap:8px;min-height:44px"><input type="checkbox" id="fDet" ${cui.detay?'checked':''} style="width:20px;height:20px"> Kayıtları göster (işaretlemek için)</label>
+  <button class="btn sm" type="button" id="fClr">Filtreleri temizle</button>
+ </div>
+ ${(()=>{const g={};for(const r of list){(g[r.taraf]=g[r.taraf]||{net:0,top:0,n:0,eski:r.tarih,rs:[]});const x=g[r.taraf];x.net+=r.net;x.top+=r.tutar;x.n++;x.rs.push(r);if(r.tarih<x.eski)x.eski=r.tarih}
+  const ks=Object.keys(g).sort((p,q)=>g[q].top-g[p].top);
+  if(!ks.length)return '<h2>Toplam</h2><div class="empty">Bu filtreye uyan kayıt yok.</div>';
+  const det=x=>`<tr class="detail"><td colspan="6"><div class="in"><table><thead><tr><th>Tarih</th><th>Fatura no / açıklama</th><th class="n">Toplam</th><th class="n">Gün</th><th>${T.od}</th><th></th></tr></thead><tbody>${x.rs.map(r=>`<tr><td>${d2(r.tarih)}</td><td>${esc(r.no)}${r.elle?' <span class="pill p-ia">elle</span>':''}</td><td class="n">${tl(r.tutar)}</td><td class="n">${r.odendi?'':daysSince(r.tarih)}</td><td><input type="checkbox" data-paid="${esc(r.key)}" ${r.odendi?'checked':''} aria-label="${T.od}"></td><td>${r.elle?`<button class="btn sm" data-mdel="${r.id}">Sil</button>`:''}</td></tr>`).join('')}</tbody></table></div></td></tr>`;
+  const sum=(f)=>ks.reduce((a,k)=>a+f(g[k]),0);
+  return `<h2>${T.taraf} bazında toplam</h2><div class="scroll"><table><thead><tr><th>${T.taraf}</th><th class="n">Kayıt</th><th class="n">Net</th><th class="n">KDV</th><th class="n">Toplam</th><th class="n">En eski</th></tr></thead><tbody>${ks.map(k=>{const x=g[k];const op=cui.detay;return `<tr><td>${esc(k)}</td><td class="n">${x.n}</td><td class="n">${tl(x.net)}</td><td class="n">${tl(x.top-x.net)}</td><td class="n"><b>${tl(x.top)}</b></td><td class="n">${d2(x.eski)} · ${daysSince(x.eski)} gün</td></tr>${op?det(x):''}`}).join('')}</tbody><tfoot><tr style="font-weight:800;background:var(--soft)"><td>GENEL TOPLAM</td><td class="n">${sum(x=>x.n)}</td><td class="n">${tl(sum(x=>x.net))}</td><td class="n">${tl(sum(x=>x.top-x.net))}</td><td class="n">${tl(sum(x=>x.top))}</td><td></td></tr></tfoot></table></div><p class="small mut">${T.od} işaretlemek veya elle kaydı silmek için “Kayıtları göster”i açın.</p>`})()}
+ ${iadeN?`<p class="small mut">Karşı tarafın iade ettiği ${iadeN} fatura listede yok.</p>`:''}
+`}
+function bindNew(h){const v=document.getElementById('view');const re=()=>renderNew(h);const err=(id,e)=>{const m=document.getElementById(id);if(m)m.textContent='Kaydedilemedi: '+e.message};
+ const f=v.querySelector('#remForm');if(f)f.onsubmit=async e=>{e.preventDefault();const b=v.querySelector('#remBody').value.trim();if(!b)return;const {error}=await sb.from('reminders').insert({body:b,due_date:v.querySelector('#remDate').value||null});if(error)return err('remMsg',error);re()};
+ v.querySelectorAll('[data-rdone]').forEach(c=>c.onchange=async()=>{const {error}=await sb.from('reminders').update({done:c.checked,updated_at:new Date().toISOString()}).eq('id',c.dataset.rdone);if(error)alertless(error);re()});
+ v.querySelectorAll('[data-rdel]').forEach(b=>b.onclick=async()=>{if(b.dataset.sure!=='1'){b.dataset.sure='1';b.textContent='Emin misiniz?';return}const {error}=await sb.from('reminders').delete().eq('id',b.dataset.rdel);if(error)alertless(error);re()});
+ const fb=(id,k,fn)=>{const e=v.querySelector('#'+id);if(e)e.onchange=()=>{cui[k]=fn?fn(e):e.value;re()}};
+ fb('fDur','cfilter');fb('fParty','party');fb('fFrom','from');fb('fTo','to');fb('fAge','age');fb('fSrc','src');fb('fDet','detay',e=>e.checked);
+ const fc=v.querySelector('#fClr');if(fc)fc.onclick=()=>{Object.assign(cui,{cfilter:'acik',party:'',from:'',to:'',age:'',src:'',detay:false});re()};
+ v.querySelectorAll('tr.detail input,tr.detail button').forEach(x=>x.addEventListener('click',e=>e.stopPropagation()));
+ const ps=v.querySelector('#cParty');if(ps)ps.onchange=()=>{cui.party=ps.value;re()};
+ v.querySelectorAll('[data-paid]').forEach(c=>c.onchange=async()=>{const [t,k]=[c.dataset.paid.slice(0,1),c.dataset.paid.slice(2)];const q=t==='f'?sb.from('invoice_payment_status').upsert({invoice_no:k,paid:c.checked,paid_date:c.checked?today():null,updated_at:new Date().toISOString()}):sb.from('cari_manual').update({paid:c.checked}).eq('id',k);const {error}=await q;if(error)alertless(error);re()});
+ v.querySelectorAll('[data-mdel]').forEach(b=>b.onclick=async()=>{if(b.dataset.sure!=='1'){b.dataset.sure='1';b.textContent='Emin misiniz?';return}const {error}=await sb.from('cari_manual').delete().eq('id',b.dataset.mdel);if(error)alertless(error);re()});
+ const cf=v.querySelector('#cForm');if(cf)cf.onsubmit=async e=>{e.preventDefault();const {error}=await sb.from('cari_manual').insert({kind:h==='alacaklar'?'alacak':'verecek',party:v.querySelector('#cParty2').value.trim(),description:v.querySelector('#cDesc').value.trim()||null,amount:+v.querySelector('#cAmt').value,due_date:v.querySelector('#cDue').value||null});if(error)return err('cMsg',error);re()}}
+function alertless(e){sync('Kaydedilemedi: '+(e.message||e))}
+window.addEventListener('hashchange',setTab);
+const SB_URL='https://dkltytnndqweulawhgpa.supabase.co',SB_KEY='sb_publishable_RjA7K6BqfH3ZKLTnmE8upw_mLu2DZqd';
+const sb=window.supabase.createClient(SB_URL,SB_KEY);
+const fmtD=s=>{if(!s)return'';const[a,b,c]=String(s).slice(0,10).split('-');return c+'.'+b+'.'+a};
+const fmtT=s=>{if(!s)return'';const d=new Date(s);const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())};
+const DUR={teslim:'TESLİM/FATURALI',fazla_fatura:'FAZLA FATURA',kismi:'KISMİ',iade_yeniden:'İADE EDİLDİ-YENİDEN FATURA',acik:'AÇIK'};
+async function all(q){const {data,error}=await q;if(error)throw error;return data}
+async function loadAll(){
+ const [os,ls,inv,ils,prods,sups,man,scans]=await Promise.all([
+  all(sb.from('v_order_status').select('sas_no,order_date,requested_delivery,payment_terms,is_change_form,mail_received_at,total_net,location_name,location_address').limit(5000)),
+  all(sb.from('v_order_line_status').select('sas_no,product_code,description,product_name,unit,qty,unit_price,amount,invoiced_qty,returned_qty,line_status,invoices,line_no').order('line_no').limit(20000)),
+  all(sb.from('invoices').select('invoice_no,issue_date,direction,invoice_type,customer_id,net_amount,vat_amount,payable_amount,returns_invoice_no,return_reason').not('customer_id','is',null).limit(5000)),
+  all(sb.from('invoice_lines').select('invoice_no,line_index,sas_no,match_type,product_code,description,qty,unit_price,amount').order('line_index').limit(20000)),
+  all(sb.from('products').select('code,supplier_id')),all(sb.from('suppliers').select('id,name')),
+  all(sb.from('order_manual_status').select('*')),all(sb.from('mail_scans').select('scanned_at,new_orders').order('scanned_at',{ascending:false}).limit(1))]);
+ const ret={};for(const i of inv)if(i.direction==='in'&&i.invoice_type==='IADE'&&i.returns_invoice_no)ret[i.returns_invoice_no]={no:i.invoice_no,tarih:i.issue_date,sebep:i.return_reason||''};
+ const supN={};for(const s of sups)supN[s.id]=s.name;const ted={};for(const p of prods)ted[p.code]=supN[p.supplier_id]==='GLF Gıda'?'GLF Gıda':supN[p.supplier_id];
+ const outs=inv.filter(i=>i.direction==='out');const custName=id=>id===2?'Antalya Deva':'Memorial';
+ manual={};for(const m of man)manual[m.sas_no]={teslim:m.delivered,not:m.note||'',at:m.updated_at};
+ const raw={
+  orders:os.map(o=>({sas:o.sas_no,tarih:fmtD(o.order_date),teslimTarihi:fmtD(o.requested_delivery),teslimYeri:(o.location_name||'')+' / Depo',sevk:(o.location_name||'')+' : '+(o.location_address||''),odeme:o.payment_terms||'',degisiklik:o.is_change_form?1:0,mail:fmtT(o.mail_received_at),toplam:+o.total_net})),
+  lines:ls.map(l=>[l.sas_no,l.product_code,l.product_name||l.description,l.unit,+l.qty,+l.unit_price,+l.amount,+l.invoiced_qty,+l.returned_qty,DUR[l.line_status]||l.line_status,l.invoices||[]]),
+  invoices:outs.map(i=>({no:i.invoice_no,tarih:i.issue_date,musteri:custName(i.customer_id),matrah:+i.net_amount,kdv:+i.vat_amount,toplam:+i.payable_amount,durum:ret[i.invoice_no]?'İADE':'AKTİF',iade:ret[i.invoice_no]||null})),
+  ilines:ils.filter(l=>outs.some(o=>o.invoice_no===l.invoice_no)).map(l=>[l.invoice_no,l.sas_no,l.match_type||'yok',l.product_code,l.description,+l.qty,+l.unit_price,+l.amount]),
+  tedarikci:ted,guncelleme:fmtT(new Date()),sonTarama:scans[0]?fmtT(scans[0].scanned_at):'',sonEklenen:scans[0]?.new_orders||[]};
+ D=build(raw);db=true;setTab();sync('Veri: '+raw.guncelleme+(raw.sonTarama?' · mail son tarama: '+raw.sonTarama:''));
+}
+async function save(sas,patch){const cur=manual[sas]||{};const nx={...cur,...patch};
+ const {error}=await sb.from('order_manual_status').upsert({sas_no:sas,delivered:!!nx.teslim,note:nx.not||null,updated_at:new Date().toISOString()});
+ if(error){sync('Kaydedilemedi: '+error.message);return}manual[sas]={...nx,at:new Date().toISOString()};sync('Kaydedildi');setTab()}
+// auth
+const auth=document.getElementById('auth'),app=document.getElementById('app');
+async function boot(){const {data:{session}}=await sb.auth.getSession();if(session){auth.hidden=true;app.hidden=false;document.getElementById('who').textContent=session.user.email;
+  remCount();try{await loadAll()}catch(e){document.getElementById('view').innerHTML='<div class="empty">Veri okunamadı: '+esc(e.message||e)+'<br>Bu e-posta adresinin erişim izni yoksa yöneticinize bildirin.</div>'}}
+ else{auth.hidden=false;app.hidden=true}}
+document.getElementById('loginForm').addEventListener('submit',async e=>{e.preventDefault();const m=document.getElementById('lmsg');m.textContent='Giriş yapılıyor…';
+ const {error}=await sb.auth.signInWithPassword({email:document.getElementById('em').value.trim(),password:document.getElementById('pw').value});
+ if(error){m.textContent=error.message==='Invalid login credentials'?'E-posta veya şifre hatalı.':error.message;return}m.textContent='';boot()});
+document.getElementById('signupBtn').addEventListener('click',async()=>{const m=document.getElementById('lmsg');const em=document.getElementById('em').value.trim(),pw=document.getElementById('pw').value;
+ if(!em||pw.length<8){m.textContent='Hesap oluşturmak için e-posta ve en az 8 karakterlik şifre yazın.';return}
+ const {error}=await sb.auth.signUp({email:em,password:pw,options:{emailRedirectTo:location.origin+location.pathname}});
+ m.textContent=error?error.message:'Doğrulama e-postası gönderildi. Maildeki bağlantıya tıklayıp sonra giriş yapın.'});
+document.getElementById('logout').addEventListener('click',async()=>{await sb.auth.signOut();location.reload()});
+// şifre sıfırlama
+const loginForm=document.getElementById('loginForm'),resetForm=document.getElementById('resetForm');
+let recovering=/type=recovery/.test(location.hash);
+function showReset(){recovering=true;app.hidden=true;auth.hidden=false;loginForm.hidden=true;resetForm.hidden=false;document.getElementById('npw').focus()}
+document.getElementById('forgotBtn').addEventListener('click',async()=>{const m=document.getElementById('lmsg');const em=document.getElementById('em').value.trim();
+ if(!em){m.textContent='Önce e-posta adresinizi yazın, sonra "Şifremi unuttum"a basın.';document.getElementById('em').focus();return}
+ m.textContent='Gönderiliyor…';
+ const {error}=await sb.auth.resetPasswordForEmail(em,{redirectTo:location.origin+location.pathname});
+ m.textContent=error?error.message:'Şifre sıfırlama bağlantısı '+em+' adresine gönderildi. Maildeki bağlantıya tıklayın; açılan sayfada yeni şifrenizi belirleyin. Mail gelmezse gereksiz klasörüne bakın.'});
+resetForm.addEventListener('submit',async e=>{e.preventDefault();const m=document.getElementById('rmsg');const a=document.getElementById('npw').value,b=document.getElementById('npw2').value;
+ if(a.length<8){m.textContent='Şifre en az 8 karakter olmalı.';return}
+ if(a!==b){m.textContent='İki şifre aynı değil.';return}
+ m.textContent='Kaydediliyor…';
+ const {error}=await sb.auth.updateUser({password:a});
+ if(error){m.textContent=error.message;return}
+ recovering=false;history.replaceState(null,'',location.pathname);resetForm.hidden=true;loginForm.hidden=false;m.textContent='';boot()});
+sb.auth.onAuthStateChange(ev=>{if(ev==='PASSWORD_RECOVERY')showReset()});
+
+// Yeni sürüm kontrolü: yükleyici (index.html) en son yayını app_release tablosundan bulur; 10 sn'de bir yenisi var mı bakılır
+async function checkVersion(){try{if(!window.__RELEASE)return;const {data}=await sb.from('app_release').select('id').order('id',{ascending:false}).limit(1);if(data&&data[0]&&data[0].id>window.__RELEASE)location.reload()}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkVersion()});
+window.addEventListener('focus',checkVersion);setInterval(()=>{if(document.visibilityState==='visible')checkVersion()},10000);
+if(recovering)showReset();else boot();
+}
+</script>
+</body>
+</html>
