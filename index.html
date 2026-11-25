@@ -433,10 +433,11 @@ resetForm.addEventListener('submit',async e=>{e.preventDefault();const m=documen
 sb.auth.onAuthStateChange(ev=>{if(ev==='PASSWORD_RECOVERY')showReset()});
 
 // Yeni sürüm kontrolü: GitHub Pages sayfayı ~10 dk önbellekte tutar; sürüm değiştiyse oturumu koruyarak yeni sürümü yükler
-const BUILD='202611251546';
+const BUILD='202611251547';
 async function checkVersion(){try{const t=await (await fetch(location.pathname+'?nocache='+Date.now(),{cache:'no-store'})).text();const m=t.match(/const BUILD='(\d+)'/);if(!m||m[1]===BUILD)return;
  const k='reloaded-'+m[1];if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');location.replace(location.pathname+'?v='+m[1]+location.hash)}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkVersion()});
+window.addEventListener('focus',checkVersion);setInterval(()=>{if(document.visibilityState==='visible')checkVersion()},30000);
 checkVersion();
 if(recovering)showReset();else boot();
 }
