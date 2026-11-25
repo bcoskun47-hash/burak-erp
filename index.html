@@ -66,8 +66,11 @@ aside.side{position:sticky;top:0;border-right:1px solid var(--line);padding:18px
 aside.side a{display:flex;align-items:center;gap:8px;min-height:42px;padding:8px 12px;border-radius:8px;color:var(--ink);text-decoration:none;font-weight:600;font-size:15px}
 aside.side a:hover{background:var(--soft)}
 aside.side a[aria-current]{background:var(--ink);color:var(--bg)}
-aside.side .grp{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);padding:14px 12px 4px}
-aside.side a.sub{padding-left:26px;font-weight:500}
+aside.side .grp{font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ink);padding:14px 12px 4px}
+aside.side a.sub{padding-left:26px;font-weight:500;min-height:38px;font-size:14.5px}
+aside.side a.top{font-size:13px;font-weight:800;letter-spacing:.06em;margin-top:10px}
+aside.side a.top:first-child{margin-top:0}
+aside.side a.top.on{color:var(--ink)}
 aside.side .cnt{margin-left:auto;font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--y);color:#101418}
 @media(max-width:860px){.shell{grid-template-columns:minmax(0,1fr)}aside.side{position:static;min-height:0;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:8px 12px}aside.side .grp{display:none}aside.side a{flex:none}aside.side a.sub{padding-left:12px}}
 .form{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:12px 0 20px;padding:14px;border:1px solid var(--line);border-radius:12px}
@@ -108,17 +111,22 @@ aside.side .cnt{margin-left:auto;font-size:12px;font-weight:700;padding:1px 8px;
 <div id="app" hidden>
 <header class="top band" style="padding-block:14px">
  <div class="wrap" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;width:100%">
-  <b>BURAK ERP</b><span>Alpin Endüstriyel Mutfak · Memorial siparişleri</span>
-  <nav class="tabs" aria-label="Bölümler">
-   <a href="#ozet">Özet</a><a href="#teslim">Teslim edilenler</a><a href="#kismi">Kısmi teslim</a><a href="#acik-siparis">Açık siparişler</a><a href="#acik">Açık ürünler</a><a href="#siparisler">Tüm siparişler</a><a href="#faturalar">Faturalar</a><a href="#kontrol">Kontrol</a>
-  </nav>
+  <b>BURAK ERP</b><span>Alpin Endüstriyel Mutfak</span>
  </div>
 </header>
 <div class="shell">
 <aside class="side" aria-label="Ana menü">
- <a href="#ozet" data-side="memorial">Memorial siparişleri</a>
- <a href="#hatirlatici" data-side="hatirlatici">Hatırlatıcı <span class="cnt" id="remCnt" hidden></span></a>
- <div class="grp">Cari</div>
+ <a href="#ozet" class="top" data-grp="memorial">MEMORIAL</a>
+ <a href="#ozet" class="sub" data-side="ozet">Özet</a>
+ <a href="#teslim" class="sub" data-side="teslim">Teslim edilenler</a>
+ <a href="#kismi" class="sub" data-side="kismi">Kısmi teslim</a>
+ <a href="#acik-siparis" class="sub" data-side="acik-siparis">Açık siparişler</a>
+ <a href="#acik" class="sub" data-side="acik">Açık ürünler</a>
+ <a href="#siparisler" class="sub" data-side="siparisler">Tüm siparişler</a>
+ <a href="#faturalar" class="sub" data-side="faturalar">Faturalar</a>
+ <a href="#kontrol" class="sub" data-side="kontrol">Kontrol</a>
+ <a href="#hatirlatici" class="top" data-side="hatirlatici">HATIRLATICI <span class="cnt" id="remCnt" hidden></span></a>
+ <div class="grp">CARİ</div>
  <a href="#alacaklar" class="sub" data-side="alacaklar">Alacaklarım</a>
  <a href="#verecekler" class="sub" data-side="verecekler">Vereceklerim</a>
 </aside>
@@ -152,7 +160,7 @@ function build(raw){
 const supN=k=>D&&D.ted[k]||'Tanımsız';const sup=k=>{const n=supN(k);return ` <span class="pill ${n==='GLF Gıda'?'p-glf':n==='İstanbul Kahve'?'p-ist':'p-ia'}">${esc(n==='GLF Gıda'?'GLF':n)}</span>`};
 const eff=o=>{const m=manual[o.sas];if(m&&m.teslim)return 'teslim';return o.durum};
 const effPill=o=>{const m=manual[o.sas];if(m&&m.teslim&&o.durum!=='teslim')return '<span class="pill p-ok">Teslim (elle)</span>';return o.durum==='teslim'?'<span class="pill p-ok">Teslim edildi</span>':o.durum==='acik'?(o.iade?'<span class="pill p-ks">İade · yeniden kesilecek</span>':'<span class="pill p-ac">Açık</span>'):'<span class="pill p-ks">Kısmi teslim</span>'};
-let lastTab='';function setTab(){const hh=(location.hash||'#ozet').slice(1);if(hh!==lastTab&&lastTab){if(!(hh==='siparisler'&&ui.open))ui.search=''}lastTab=hh;const h=(location.hash||'#ozet').slice(1);for(const a of document.querySelectorAll('nav.tabs a'))a.toggleAttribute('aria-current',a.getAttribute('href')==='#'+h);const side=NEWV.includes(h)?h:'memorial';for(const a of document.querySelectorAll('aside.side a'))a.toggleAttribute('aria-current',a.dataset.side===side);document.querySelector('nav.tabs').hidden=NEWV.includes(h);render(h)}
+let lastTab='';function setTab(){const hh=(location.hash||'#ozet').slice(1);if(hh!==lastTab&&lastTab){if(!(hh==='siparisler'&&ui.open))ui.search=''}lastTab=hh;const h=(location.hash||'#ozet').slice(1);const known=[...document.querySelectorAll('aside.side a[data-side]')].map(a=>a.dataset.side);const side=known.includes(h)?h:'ozet';for(const a of document.querySelectorAll('aside.side a[data-side]'))a.toggleAttribute('aria-current',a.dataset.side===side);for(const g of document.querySelectorAll('aside.side a[data-grp]'))g.classList.toggle('on',!NEWV.includes(h));render(h)}
 function render(h){const v=document.getElementById('view');if(NEWV.includes(h)){renderNew(h);return}if(!D)return;
  if(h==='teslim')v.innerHTML=vList('teslim');else if(h==='kismi')v.innerHTML=vKismi();else if(h==='acik-siparis')v.innerHTML=vList('acik');else if(h==='acik')v.innerHTML=vOpen();else if(h==='siparisler')v.innerHTML=vOrders();else if(h==='faturalar')v.innerHTML=vInvoices();else if(h==='kontrol')v.innerHTML=vCheck();else v.innerHTML=vSummary();
  bindView(h)}
