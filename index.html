@@ -70,11 +70,17 @@ aside.side a:hover{background:var(--soft)}
 aside.side a[aria-current]{background:var(--ink);color:var(--bg)}
 aside.side .grp{font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ink);padding:14px 12px 4px}
 aside.side a.sub{padding-left:26px;font-weight:500;min-height:38px;font-size:14.5px}
-aside.side a.top{font-size:13px;font-weight:800;letter-spacing:.06em;margin-top:10px}
-aside.side a.top:first-child{margin-top:0}
-aside.side a.top.on{color:var(--ink)}
+aside.side a.top,aside.side button.top{font:inherit;font-size:13px;font-weight:800;letter-spacing:.06em;margin-top:6px;width:100%;display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 12px;border:0;border-radius:8px;background:none;color:var(--ink);cursor:pointer;text-align:left;text-decoration:none}
+aside.side button.top:hover{background:var(--soft)}
+aside.side .car{margin-left:auto;transition:transform .15s}
+aside.side .sg.open .car{transform:rotate(90deg)}
+aside.side .subs{display:none;flex-direction:column;gap:2px}
+aside.side .sg.open .subs{display:flex}
+aside.side .sg.cur>button.top{color:var(--ink);background:var(--soft)}
+aside.side>:first-child .top,aside.side>.top:first-child{margin-top:0}
+
 aside.side .cnt{margin-left:auto;font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--y);color:#101418}
-@media(max-width:860px){.shell{grid-template-columns:minmax(0,1fr)}aside.side{position:static;min-height:0;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:8px 12px}aside.side .grp{display:none}aside.side a{flex:none}aside.side a.sub{padding-left:12px}}
+@media(max-width:860px){.shell{grid-template-columns:minmax(0,1fr)}aside.side{position:static;min-height:0;border-right:0;border-bottom:1px solid var(--line);padding:8px 12px}aside.side .subs{flex-direction:row;flex-wrap:wrap}aside.side a.sub{padding-left:12px}}
 .form{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:12px 0 20px;padding:14px;border:1px solid var(--line);border-radius:12px}
 .form label{display:grid;gap:4px;font-size:13px;color:var(--mut);font-weight:600}
 .form input,.form textarea{font:inherit;font-size:16px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
@@ -118,7 +124,8 @@ aside.side .cnt{margin-left:auto;font-size:12px;font-weight:700;padding:1px 8px;
 </header>
 <div class="shell">
 <aside class="side" aria-label="Ana menü">
- <a href="#ozet" class="top" data-grp="memorial">MEMORIAL</a>
+ <div class="sg" data-g="memorial"><button type="button" class="top" aria-expanded="false" aria-controls="sg-memorial">MEMORIAL <span class="car" aria-hidden="true">▸</span></button>
+ <div class="subs" id="sg-memorial">
  <a href="#ozet" class="sub" data-side="ozet">Özet</a>
  <a href="#teslim" class="sub" data-side="teslim">Teslim edilenler</a>
  <a href="#kismi" class="sub" data-side="kismi">Kısmi teslim</a>
@@ -127,10 +134,13 @@ aside.side .cnt{margin-left:auto;font-size:12px;font-weight:700;padding:1px 8px;
  <a href="#siparisler" class="sub" data-side="siparisler">Tüm siparişler</a>
  <a href="#faturalar" class="sub" data-side="faturalar">Faturalar</a>
  <a href="#kontrol" class="sub" data-side="kontrol">Kontrol</a>
+ </div></div>
  <a href="#hatirlatici" class="top" data-side="hatirlatici">HATIRLATICI <span class="cnt" id="remCnt" hidden></span></a>
- <div class="grp">CARİ</div>
+ <div class="sg" data-g="cari"><button type="button" class="top" aria-expanded="false" aria-controls="sg-cari">CARİ <span class="car" aria-hidden="true">▸</span></button>
+ <div class="subs" id="sg-cari">
  <a href="#alacaklar" class="sub" data-side="alacaklar">Alacaklarım</a>
  <a href="#verecekler" class="sub" data-side="verecekler">Vereceklerim</a>
+ </div></div>
 </aside>
 <main class="band"><div class="wrap" id="view"><div class="empty">Veriler yükleniyor…</div></div></main>
 </div>
@@ -162,7 +172,9 @@ function build(raw){
 const supN=k=>D&&D.ted[k]||'Tanımsız';const sup=k=>{const n=supN(k);return ` <span class="pill ${n==='GLF Gıda'?'p-glf':n==='İstanbul Kahve'?'p-ist':'p-ia'}">${esc(n==='GLF Gıda'?'GLF':n)}</span>`};
 const eff=o=>{const m=manual[o.sas];if(m&&m.teslim)return 'teslim';return o.durum};
 const effPill=o=>{const m=manual[o.sas];if(m&&m.teslim&&o.durum!=='teslim')return '<span class="pill p-ok">Teslim (elle)</span>';return o.durum==='teslim'?'<span class="pill p-ok">Teslim edildi</span>':o.durum==='acik'?(o.iade?'<span class="pill p-ks">İade · yeniden kesilecek</span>':'<span class="pill p-ac">Açık</span>'):'<span class="pill p-ks">Kısmi teslim</span>'};
-let lastTab='';function setTab(){const hh=(location.hash||'#ozet').slice(1);if(hh!==lastTab&&lastTab){if(!(hh==='siparisler'&&ui.open))ui.search=''}lastTab=hh;const h=(location.hash||'#ozet').slice(1);const known=[...document.querySelectorAll('aside.side a[data-side]')].map(a=>a.dataset.side);const side=known.includes(h)?h:'ozet';for(const a of document.querySelectorAll('aside.side a[data-side]'))a.toggleAttribute('aria-current',a.dataset.side===side);for(const g of document.querySelectorAll('aside.side a[data-grp]'))g.classList.toggle('on',!NEWV.includes(h));render(h)}
+function setGroup(g,open){g.classList.toggle('open',open);const b=g.querySelector('button.top');if(b)b.setAttribute('aria-expanded',open);try{localStorage.setItem('sg-'+g.dataset.g,open?'1':'0')}catch(e){}}
+document.querySelectorAll('aside.side .sg').forEach(g=>{let st=null;try{st=localStorage.getItem('sg-'+g.dataset.g)}catch(e){}if(st==='1')setGroup(g,true);g.querySelector('button.top').onclick=()=>setGroup(g,!g.classList.contains('open'))});
+let lastTab='';function setTab(){const hh=(location.hash||'#ozet').slice(1);if(hh!==lastTab&&lastTab){if(!(hh==='siparisler'&&ui.open))ui.search=''}lastTab=hh;const h=(location.hash||'#ozet').slice(1);const known=[...document.querySelectorAll('aside.side a[data-side]')].map(a=>a.dataset.side);const side=known.includes(h)?h:'ozet';for(const a of document.querySelectorAll('aside.side a[data-side]'))a.toggleAttribute('aria-current',a.dataset.side===side);for(const g of document.querySelectorAll('aside.side .sg')){const has=!!g.querySelector(`a[data-side="${side}"]`);g.classList.toggle('cur',has);if(has&&!g.dataset.auto){g.dataset.auto='1';setGroup(g,true)}}render(h)}
 function render(h){const v=document.getElementById('view');if(NEWV.includes(h)){renderNew(h);return}if(!D)return;
  if(h==='teslim')v.innerHTML=vList('teslim');else if(h==='kismi')v.innerHTML=vKismi();else if(h==='acik-siparis')v.innerHTML=vList('acik');else if(h==='acik')v.innerHTML=vOpen();else if(h==='siparisler')v.innerHTML=vOrders();else if(h==='faturalar')v.innerHTML=vInvoices();else if(h==='kontrol')v.innerHTML=vCheck();else v.innerHTML=vSummary();
  bindView(h)}
@@ -421,7 +433,7 @@ resetForm.addEventListener('submit',async e=>{e.preventDefault();const m=documen
 sb.auth.onAuthStateChange(ev=>{if(ev==='PASSWORD_RECOVERY')showReset()});
 
 // Yeni sürüm kontrolü: GitHub Pages sayfayı ~10 dk önbellekte tutar; sürüm değiştiyse oturumu koruyarak yeni sürümü yükler
-const BUILD='202611251539';
+const BUILD='202611251546';
 async function checkVersion(){try{const t=await (await fetch(location.pathname+'?nocache='+Date.now(),{cache:'no-store'})).text();const m=t.match(/const BUILD='(\d+)'/);if(!m||m[1]===BUILD)return;
  const k='reloaded-'+m[1];if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');location.replace(location.pathname+'?v='+m[1]+location.hash)}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkVersion()});
